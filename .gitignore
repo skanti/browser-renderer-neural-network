@@ -1,0 +1,21 @@
+#generated
+pid.txt
+*.vox
+log.txt
+
+# hidden files
+.*
+*~
+# other
+env.sh
+
+#build folders
+build
+
+# node modules
+node_modules
+npm-debug.log
+
+# exception
+!.gitignore
+
