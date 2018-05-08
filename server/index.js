@@ -31,24 +31,54 @@ function get_folderlist(folder) {
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
-app.get("/download/vox/*", function (req, res) {
-	let file0 = path.join(__dirname, "/static/homearmen/", req.params["0"]);
-	let file1 = path.join(__dirname, "/static/root/", req.params["0"]);
-	let files = [file0, file1]
+function search_and_find_file(file0) {
+	let file1 = path.join(__dirname, "/static/homearmen/", file0);
+	let file2 = path.join(__dirname, "/static/root/", file0);
+	let files = [file1, file2]
 	for (let f in files) {
-		if (fs.existsSync(files[f])) {
-			res.sendFile(files[f]);
-			return;
-		}
+		if (fs.existsSync(files[f]))
+			return files[f];
 	}
+	return null;
+}
+
+app.get("/download/csv/*", function (req, res) {
+	let file = search_and_find_file(req.params["0"]);
+	res.sendFile(file);
 });
 
+app.get("/download/vox/*", function (req, res) {
+	let file = search_and_find_file(req.params["0"]);
+	res.sendFile(file);
+});
+
+app.get("/download/mesh/scannet/:id", function (req, res) {
+	let id = req.params.id;
+	
+	let filename = path.join(__dirname, "/static/root/mnt/braxis/ScanNet/internal/scans/checked/", id, id + "_vh_clean_2.ply");
+	res.sendFile(filename);
+});
+
+app.get("/download/mesh/shapnet/:catid/:id", function (req, res) {
+	let catid = req.params.catid;
+	let id = req.params.id;
+
+	let filename = path.join(__dirname, "/static/root/mnt/braxis/Datasets/ShapeNetCore.v2/", catid, id, models, "normalized.obj");
+	res.sendFile(filename);
+});
 
 router.get("/", function (req, res) {
     res.redirect(path.join(Config.base_url, "/0"));
 });
 
-router.get("/*", function (req, res) {
+router.get("/scene/*", function (req, res) {
+    res.render("SceneViewer", {
+		id_file : req.params["0"]
+	});
+});
+
+router.get("/vox/*", function (req, res) {
+	console.log(req.params["0"])
     res.render("VoxViewer", {
 		id_file : req.params["0"]
 	});

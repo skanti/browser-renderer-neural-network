@@ -117,7 +117,7 @@ class VoxViewer {
 			for (let j = 0; j < dims[1]; j++) {
 				for (let i = 0; i < dims[0]; i++) {
 					let index1 = k*dims[1]*dims[0] + j*dims[0] + i;
-					if (Math.abs(sdf[index1]) < res) {
+					if (Math.abs(sdf[index1]) < res || pdf[index1] >= 0.5) {
 						positions.push(i/dimmax - 0.5);
 						positions.push(j/dimmax - 0.5);
 						positions.push(k/dimmax - 0.5);
