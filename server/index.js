@@ -59,11 +59,11 @@ app.get("/download/mesh/scannet/:id", function (req, res) {
 	res.sendFile(filename);
 });
 
-app.get("/download/mesh/shapnet/:catid/:id", function (req, res) {
+app.get("/download/mesh/shapenet/:catid/:id/*", function (req, res) {
 	let catid = req.params.catid;
 	let id = req.params.id;
 
-	let filename = path.join(__dirname, "/static/root/mnt/braxis/Datasets/ShapeNetCore.v2/", catid, id, models, "normalized.obj");
+	let filename = path.join(__dirname, "/static/root/mnt/braxis/Datasets/ShapeNetCore.v2/", catid, id, req.params["0"]);
 	res.sendFile(filename);
 });
 

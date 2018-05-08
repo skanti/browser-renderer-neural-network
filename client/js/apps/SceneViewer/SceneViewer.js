@@ -13,7 +13,7 @@ import * as d3 from 'd3/build/d3';
 import * as PolygonInstanceGLSL from '../../lib/shader/PolygonInstanceGLSL'
 import WindowManager from "../Common/WindowManager"
 import SceneModel from "../../lib/vao/SceneModel"
-
+import OBJModel from "../../lib/vao/OBJModel"
 
 class SceneViewer {
 
@@ -35,15 +35,30 @@ class SceneViewer {
 		this.load_scene(filename_scene).then(scene => {
 			this.models.push(scene);
 		});
-
 		
 		this.load_csv(filename).then(csv => {
 			for (let i = 0; i < csv.length; i++) {
-				return;
+				let csv1 = csv[i];
+				let id_shapenet = csv1[0];
+				let catid_shapenet = csv1[1];
+				this.load_obj(catid_shapenet, id_shapenet).then(obj => {
+					this.models.push(obj);
+				});
 			}
 		});
 		this.advance();
     }
+	
+    load_obj(catid_shapenet, id_shapenet) {
+        return new Promise((resolve, reject) => {
+            let obj = new OBJModel();
+            obj.init(this.window0.gl);
+
+            obj.load(catid_shapenet, id_shapenet).then( res => {
+                resolve(obj);
+            });
+        });
+	}
 
 	load_scene(id_scene) {
         return new Promise((resolve, reject) => {
@@ -54,7 +69,6 @@ class SceneViewer {
                 resolve(scene);
             });
         });
-
 	}
 
 	static basename(str) {

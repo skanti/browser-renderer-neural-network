@@ -195,7 +195,7 @@ class OBJModel {
     load_from_server(catid_shapenet, id_shapenet) {
         return new Promise((resolve, reject) => {
             //-> load meshes
-            let basepath = "/MeshViewer/download/shapenet/mesh/" + catid_shapenet + "/" + id_shapenet;
+            let basepath = "/download/mesh/shapenet/" + catid_shapenet + "/" + id_shapenet;
 
             let mtl_loader = new THREE.MTLLoader();
             mtl_loader.setTexturePath(basepath + "/models/");
