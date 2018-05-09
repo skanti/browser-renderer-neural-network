@@ -14,6 +14,7 @@ import * as PolygonInstanceGLSL from '../../lib/shader/PolygonInstanceGLSL'
 import WindowManager from "../Common/WindowManager"
 import SceneModel from "../../lib/vao/SceneModel"
 import OBJModel from "../../lib/vao/OBJModel"
+import Wireframe from "../../lib/vao/Wireframe"
 
 class SceneViewer {
 
@@ -41,14 +42,39 @@ class SceneViewer {
 				let csv1 = csv[i];
 				let id_shapenet = csv1[0];
 				let catid_shapenet = csv1[1];
+				let trs = this.parse_trs([csv1[2], csv1[3], csv1[4]], [csv1[6], csv1[7], csv1[8], csv1[5]], [csv1[9], csv1[10], csv1[11]]);
+
 				this.load_obj(catid_shapenet, id_shapenet).then(obj => {
+                    obj.scale_matrix0.makeScale(trs.scale.x, trs.scale.y, trs.scale.z);
+                    obj.rotation_matrix0.makeRotationFromQuaternion(trs.rot);
+                    obj.translation_matrix0.makeTranslation(trs.trans.x, trs.trans.y, trs.trans.z);
+
+                    obj.scale_matrix.makeScale(trs.scale.x, trs.scale.y, trs.scale.z);
+                    obj.rotation_matrix.makeRotationFromQuaternion(trs.rot);
+                    obj.translation_matrix.makeTranslation(trs.trans.x, trs.trans.y, trs.trans.z);
+
+					var wireframe = new Wireframe();
+					wireframe.init(this.window0.gl);
+					wireframe.is_visible = 1;
+					wireframe.update_box(obj.bounding_box.x, obj.bounding_box.y, obj.bounding_box.z);
+					wireframe.model_matrix = obj.model_matrix;
 					this.models.push(obj);
+					this.models.push(wireframe);
 				});
 			}
 		});
 		this.advance();
     }
 	
+	parse_trs(trans0, rot0, scale0) {
+		let scale = new THREE.Vector3().fromArray(scale0.slice(0));
+		let rot = new THREE.Quaternion().fromArray(rot0.slice(0));
+		rot = rot.normalize()
+
+		let trans = new THREE.Vector3().fromArray(trans0.slice(0));
+		return {"trans" : trans, "rot" : rot, "scale" : scale};
+	}
+
     load_obj(catid_shapenet, id_shapenet) {
         return new Promise((resolve, reject) => {
             let obj = new OBJModel();

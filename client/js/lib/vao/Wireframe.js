@@ -124,7 +124,7 @@ class Wireframe {
         this.vao.color = new THREE.Vector4(1, 0, 0, 1.0);
     }
 
-    draw(view_matrix, projection_matrix, model_matrix) {
+    draw(view_matrix, projection_matrix) {
         if (this.is_visible) {
             this.gl.useProgram(this.program);
 
@@ -134,11 +134,8 @@ class Wireframe {
 
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.vao.ebo);
             this.gl.uniform4f(this.gl.getUniformLocation(this.program, "color"), this.vao.color.x, this.vao.color.y, this.vao.color.z, this.vao.color.w);
-            // this.model_matrix.identity();
-            // this.model_matrix.premultiply(this.scale_matrix);
-            // this.model_matrix.premultiply(this.rotation_matrix);
-            // this.model_matrix.premultiply(this.translation_matrix);
-            this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.program, "model_matrix"), false, new Float32Array(model_matrix.elements));
+            
+			this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.program, "model_matrix"), false, new Float32Array(this.model_matrix.elements));
             this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.program, "view_matrix"), false, new Float32Array(view_matrix.elements));
             this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.program, "projection_matrix"), false, new Float32Array(projection_matrix.elements));
 
