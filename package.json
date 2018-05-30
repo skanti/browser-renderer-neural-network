@@ -23,7 +23,7 @@
   },
   "scripts": {
     "build": "mkdir -p ./client/build && browserify ./client/js/apps/SceneViewer/SceneViewer.js  ./client/js/apps/VoxViewer/VoxViewer.js  ./client/js/apps/Common/Common.js --standalone MonitorNet -o ./client/build/Bundle.js -t [ babelify --presets [ env react ] ]",
-    "watch": "mkdir -p ./client/build && watchify ./client/js/apps/SceneViewer/SceneViewer.js  ./client/js/apps/Common/Common.js ./client/js/apps/Common/Common.js --standalone MonitorNet -o ./client/build/Bundle.js -t [ babelify --presets [ env react ] ] --debug --verbose"
+    "watch": "mkdir -p ./client/build && watchify ./client/js/apps/SceneViewer/SceneViewer.js  ./client/js/apps/Common/Common.js ./client/js/apps/VoxViewer/VoxViewer.js --standalone MonitorNet -o ./client/build/Bundle.js -t [ babelify --presets [ env react ] ] --debug --verbose"
   },
   "repository": {
     "type": "",

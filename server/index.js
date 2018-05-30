@@ -78,7 +78,6 @@ router.get("/scene/*", function (req, res) {
 });
 
 router.get("/vox/*", function (req, res) {
-	console.log(req.params["0"])
     res.render("VoxViewer", {
 		id_file : req.params["0"]
 	});
