@@ -11,10 +11,12 @@ window.THREE = THREE;
 import * as d3 from 'd3/build/d3';
 
 import * as PolygonInstanceGLSL from '../../lib/shader/PolygonInstanceGLSL'
+import PickVisibleVertex from "../../lib/vao/PickVisibleVertex";
 import WindowManager from "../Common/WindowManager"
 import SceneModel from "../../lib/vao/SceneModel"
 import OBJModel from "../../lib/vao/OBJModel"
 import Wireframe from "../../lib/vao/Wireframe"
+
 
 class SceneViewer {
 
@@ -32,6 +34,10 @@ class SceneViewer {
 		this.attach_listener(this.window0);
 
 
+		this.pvv = new PickVisibleVertex();
+		this.pvv.init(this.window0.gl, this.window0.window_width, this.window0.window_height);
+		this.pvv.set_active();
+
 		let filename_scene = SceneViewer.basename(filename);
 		this.load_scene(filename_scene).then(scene => {
 			this.models.push(scene);
@@ -39,9 +45,10 @@ class SceneViewer {
 			this.load_csv(filename).then(csv => {
 				for (let i = 0; i < csv.length; i++) {
 					let csv1 = csv[i];
-					let id_shapenet = csv1[0];
-					let catid_shapenet = csv1[1];
-					let trs = this.parse_trs([csv1[2], csv1[3], csv1[4]], [csv1[6], csv1[7], csv1[8], csv1[5]], [csv1[9], csv1[10], csv1[11]]);
+					let i_cad = parseInt(csv1[0]);
+					let id_shapenet = csv1[1];
+					let catid_shapenet = csv1[2];
+					let trs = this.parse_trs([csv1[3], csv1[4], csv1[5]], [csv1[7], csv1[8], csv1[9], csv1[6]], [csv1[10], csv1[11], csv1[12]]);
 
 					this.load_obj(catid_shapenet, id_shapenet).then(obj => {
 
@@ -59,6 +66,10 @@ class SceneViewer {
 						let rot = (new THREE.Matrix4()).makeRotationFromQuaternion(q0);
 						//rot.identity();
 						let scale = (new THREE.Matrix4()).makeScale(s0.x, s0.y, s0.z);
+
+						let label_buffer = new Int32Array(obj.position_buffer.length/3);
+						label_buffer.fill(i_cad + 1)
+						obj.init_vao_offscreen(this.pvv.gl, obj.position_buffer, label_buffer)
 
 						obj.translation_matrix = trans;
 						obj.rotation_matrix = rot;
@@ -131,7 +142,11 @@ class SceneViewer {
 		for (let i in this.models) {
 			this.models[i].draw(this.window0.camera.matrixWorldInverse, this.window0.projection_matrix);
 		}
-        requestAnimationFrame(this.advance_ref);
+		
+		let pos_mouse = this.window0.get_pos_mouse();
+		this.pvv.pick(pos_mouse.x, pos_mouse.y, new Float32Array(this.window0.camera.matrixWorldInverse.elements), new Float32Array(this.window0.projection_matrix.elements), this.window0.window_width, this.window0.window_height, this.models);
+        
+		requestAnimationFrame(this.advance_ref);
     }
 
     draw_root() {
@@ -139,6 +154,8 @@ class SceneViewer {
     }
 
     mouseclick ( event ) {
+		let vertex_info = this.pvv.get_vertex_info();
+		console.log(vertex_info.id_mesh - 1)
     }
 
     mousedown ( event ) {

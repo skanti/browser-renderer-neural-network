@@ -129,7 +129,7 @@ class PickVisibleVertex {
         gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     }
 
-    set_active(value) {
+    set_active(value = 1) {
         this.is_active = value;
     }
 
@@ -151,7 +151,8 @@ class PickVisibleVertex {
 
             for (let key in vao_list) {
                 let vao = vao_list[key];
-                vao.draw_offscreen(view_matrix, projection_matrix);
+				if (typeof vao.draw_offscreen == "function")
+					vao.draw_offscreen(view_matrix, projection_matrix);
             }
 
 

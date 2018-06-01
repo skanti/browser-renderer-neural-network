@@ -4,6 +4,7 @@ import OBJLoader from '../loader/OBJLoader.js';
 import MTLLoader from '../loader/MTLLoader.js'
 
 import * as Phong from '../shader/PhongGLSL.js';
+import * as PVVGLSL from '../shader/PVVGLSL.js';
 
 class VAOOffscreen {
     constructor(gl) {
@@ -100,6 +101,43 @@ class OBJModel {
         this.label_buffer = null;
 
     }
+
+	init_vao_offscreen(gl, position_buffer, label_buffer) {
+		this.vao_offscreen = new VAOOffscreen(gl);
+		this.vao_offscreen.program = GLProgram.compile_shaders_and_link_with_program(gl, PVVGLSL.PVVVS, PVVGLSL.PVVFS);
+
+		this.vao_offscreen.n_vertices = position_buffer.length/3;
+
+		this.vao_offscreen.set_vbo_position(position_buffer);
+		this.vao_offscreen.set_vbo_label(label_buffer);
+	}
+	
+	draw_offscreen(view_matrix, projection_matrix) {
+		if (this.is_visible_offscreen) {
+			let vao = this.vao_offscreen;
+			let gl = vao.gl;
+			gl.useProgram(vao.program);
+			this.gl.enable(this.gl.CULL_FACE);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, vao.vbo_position);
+			gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(1);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, vao.vbo_label);
+			gl.vertexAttribIPointer(1, 1, gl.INT, 0, 0);
+			gl.enableVertexAttribArray(1);
+
+			gl.uniformMatrix4fv(gl.getUniformLocation(vao.program, "model_matrix"), false, new Float32Array(this.model_matrix.elements));
+			gl.uniformMatrix4fv(gl.getUniformLocation(vao.program, "projection_matrix"), false, projection_matrix);
+			gl.uniformMatrix4fv(gl.getUniformLocation(vao.program, "view_matrix"), false, view_matrix);
+
+			gl.drawArrays(gl.TRIANGLES, 0, vao.n_vertices);
+
+			gl.useProgram(null);
+			gl.bindBuffer(gl.ARRAY_BUFFER, null);
+		}
+	}
+
 
     reinit_gl(gl) {
         this.is_visible = 0;
