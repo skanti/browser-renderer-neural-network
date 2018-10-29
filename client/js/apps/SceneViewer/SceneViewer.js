@@ -56,8 +56,8 @@ class SceneViewer {
 						obj.rotation_matrix.makeRotationFromQuaternion(trs.rot);
 						obj.translation_matrix.makeTranslation(trs.trans.x, trs.trans.y, trs.trans.z);
 						obj.calc_model_matrix();
-						//obj.model_matrix.premultiply(scene.rotation_matrix);
-						//obj.model_matrix.premultiply(scene.translation_matrix);
+						obj.model_matrix.premultiply(scene.rotation_matrix);
+						obj.model_matrix.premultiply(scene.translation_matrix);
 
 						let t0 = new THREE.Vector3(0, 0, 0); let q0 = new THREE.Quaternion(); let s0 = new THREE.Vector3(0, 0, 0); 
 						obj.model_matrix.decompose(t0, q0, s0);
