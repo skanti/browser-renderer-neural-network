@@ -117,13 +117,14 @@ class VoxViewer {
 			for (let j = 0; j < dims[1]; j++) {
 				for (let i = 0; i < dims[0]; i++) {
 					let index1 = k*dims[1]*dims[0] + j*dims[0] + i;
-					if (Math.abs(sdf[index1]) < res || pdf[index1] >= 0.5) {
+					if (Math.abs(sdf[index1]) < res || pdf[index1] > 0) {
 						positions.push(i/dimmax - 0.5);
 						positions.push(j/dimmax - 0.5);
 						positions.push(k/dimmax - 0.5);
-						colors.push(pdf[index1]*0.8 + 0.2);
-						colors.push(0.2);
-						colors.push(0.2);
+						let color1 = VoxViewer.convert_value_to_rgb(pdf[index1])
+						colors.push(color1[0]);
+						colors.push(color1[1]);
+						colors.push(color1[2]);
 						n_size++;
 					}
 				}
@@ -146,33 +147,40 @@ class VoxViewer {
 
         return vao_data;
     }
+	
+	static convert_hsv_to_rgb(hsv) {
+		let H = hsv[0];
+		let S = hsv[1];
+		let V = hsv[2];
 
-	onclick_thresh(id_canvas, is_thresh) {
-        let dims = this.vox0.dims;
-        let res = this.vox0.res;
-        let sdf = this.vox0.sdf;
-        let pdf = this.vox0.pdf;
-		
-		let colors = this.vao_data0.colors;
-		let n_size = 0
-        for (let k = 0; k < dims[2]; k++) {
-			for (let j = 0; j < dims[1]; j++) {
-				for (let i = 0; i < dims[0]; i++) {
-					let index1 = k*dims[1]*dims[0] + j*dims[0] + i;
-					if (Math.abs(sdf[index1]) < res) {
-						if (is_thresh)
-							colors[n_size*3 + 0] = pdf[index1]*0.8 + 0.2;
-						else
-							colors[n_size*3 + 0] = pdf[index1] >= 0.5 ? 1 : 0.2;
-						colors[n_size*3 + 1] = (0.2);
-						colors[n_size*3 + 2] = (0.2);
-						n_size++;
-					}
-				}
-			}
-		}
+		let hd = H/60.0;
+		let h = Math.floor(hd);
+		let f = hd - h;
 
-		this.vao0.upload_data(this.vao_data0.n_vertices, this.vao_data0.n_instances, this.vao_data0.vertices, this.vao_data0.normals, this.vao_data0.positions, this.vao_data0.colors);
+		let p = V*(1.0 - S);
+		let q = V*(1.0 - S*f);
+		let t = V*(1.0 - S*(1.0 - f));
+
+		if (h == 0 || h == 6)
+			return [V, t, p];
+		else if (h == 1) 
+			return [q, V, p];
+		else if (h == 2)
+			return [p, V, t];
+		else if (h == 3) 
+			return [p, q, V];
+		else if (h == 4) 
+			return [t, p, V];
+		else
+			return [V, p, q];
+	}
+
+	static convert_value_to_rgb(val, vmin = -0.2, vmax = 1) {
+		let val0to1 = (val - vmin) / (vmax - vmin);
+		let x = 1.0 - val0to1;
+		if (x < 0.0)	x = 0.0;
+		if (x > 1.0)	x = 1.0;
+		return VoxViewer.convert_hsv_to_rgb([240.0*x, 1.0, 0.5]);
 	}
 
 	onclick_files() {

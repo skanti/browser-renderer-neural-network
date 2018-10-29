@@ -42,7 +42,7 @@ function search_and_find_file(file0) {
 	return null;
 }
 
-app.get("/download/csv/*", function (req, res) {
+app.get("/download/json/*", function (req, res) {
 	let file = search_and_find_file(req.params["0"]);
 	res.sendFile(file);
 });

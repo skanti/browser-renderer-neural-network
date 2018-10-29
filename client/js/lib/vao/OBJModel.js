@@ -210,21 +210,21 @@ class OBJModel {
         let center_y = (min_y + max_y)/2.0;
         let center_z = (min_z + max_z)/2.0;
 
-        //for (let i = 0; i < n; i++) {
-        //    vertices[3*i + 0] -= center_x;
-        //    vertices[3*i + 1] -= center_y;
-        //    vertices[3*i + 2] -= center_z;
-        //}
+        for (let i = 0; i < n; i++) {
+            vertices[3*i + 0] -= center_x;
+            vertices[3*i + 1] -= center_y;
+            vertices[3*i + 2] -= center_z;
+        }
 
-        //max_x = -Infinity;
-        //max_y = -Infinity;
-        //max_z = -Infinity;
+        max_x = -Infinity;
+        max_y = -Infinity;
+        max_z = -Infinity;
 
-        //for (let i = 0; i < n; i++) {
-        //    max_x = Math.max(max_x, vertices[3*i + 0]);
-        //    max_y = Math.max(max_y, vertices[3*i + 1]);
-        //    max_z = Math.max(max_z, vertices[3*i + 2]);
-        //}
+        for (let i = 0; i < n; i++) {
+            max_x = Math.max(max_x, vertices[3*i + 0]);
+            max_y = Math.max(max_y, vertices[3*i + 1]);
+            max_z = Math.max(max_z, vertices[3*i + 2]);
+        }
 
         this.bbox_center = new THREE.Vector3(center_x, center_y, center_z);
         this.bounding_box = new THREE.Vector3(max_x, max_y, max_z);

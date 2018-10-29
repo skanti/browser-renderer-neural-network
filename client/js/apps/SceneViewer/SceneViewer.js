@@ -42,22 +42,22 @@ class SceneViewer {
 		this.load_scene(filename_scene).then(scene => {
 			this.models.push(scene);
 
-			this.load_csv(filename).then(csv => {
-				for (let i = 0; i < csv.length; i++) {
-					let csv1 = csv[i];
-					let i_cad = parseInt(csv1[0]);
-					let id_shapenet = csv1[1];
-					let catid_shapenet = csv1[2];
-					let trs = this.parse_trs([csv1[3], csv1[4], csv1[5]], [csv1[7], csv1[8], csv1[9], csv1[6]], [csv1[10], csv1[11], csv1[12]]);
+			this.icad2cad = {};
+			xhr_json("GET", "/download/json/" + filename).then(res => {
+				for (let i in res) {
+					console.log(res[i]);
+					let id_cad = res[i]["id_cad"];
+					let catid_cad = res[i]["catid_cad"];
+					let trs = this.parse_trs(res[i]["trs"]["trans"], res[i]["trs"]["rot"], res[i]["trs"]["scale"]);
 
-					this.load_obj(catid_shapenet, id_shapenet).then(obj => {
+					this.load_obj(catid_cad, id_cad).then(obj => {
 
 						obj.scale_matrix.makeScale(trs.scale.x, trs.scale.y, trs.scale.z);
 						obj.rotation_matrix.makeRotationFromQuaternion(trs.rot);
 						obj.translation_matrix.makeTranslation(trs.trans.x, trs.trans.y, trs.trans.z);
 						obj.calc_model_matrix();
-						obj.model_matrix.premultiply(scene.rotation_matrix);
-						obj.model_matrix.premultiply(scene.translation_matrix);
+						//obj.model_matrix.premultiply(scene.rotation_matrix);
+						//obj.model_matrix.premultiply(scene.translation_matrix);
 
 						let t0 = new THREE.Vector3(0, 0, 0); let q0 = new THREE.Quaternion(); let s0 = new THREE.Vector3(0, 0, 0); 
 						obj.model_matrix.decompose(t0, q0, s0);
@@ -68,7 +68,8 @@ class SceneViewer {
 						let scale = (new THREE.Matrix4()).makeScale(s0.x, s0.y, s0.z);
 
 						let label_buffer = new Int32Array(obj.position_buffer.length/3);
-						label_buffer.fill(i_cad + 1)
+						label_buffer.fill(i + 1)
+						this.icad2cad[i] = {"catid_cad" : catid_cad, "id_cad" : id_cad};
 						obj.init_vao_offscreen(this.pvv.gl, obj.position_buffer, label_buffer)
 
 						obj.translation_matrix = trans;
@@ -91,18 +92,19 @@ class SceneViewer {
 	
 	parse_trs(trans0, rot0, scale0) {
 		let scale = new THREE.Vector3().fromArray(scale0.slice(0));
+		rot0 = [rot0[1], rot0[2], rot0[3], rot0[0]];
 		let rot = new THREE.Quaternion().fromArray(rot0.slice(0)).normalize();
 
 		let trans = new THREE.Vector3().fromArray(trans0.slice(0));
 		return {"trans" : trans, "rot" : rot, "scale" : scale};
 	}
 
-    load_obj(catid_shapenet, id_shapenet) {
+    load_obj(catid_cad, id_cad) {
         return new Promise((resolve, reject) => {
             let obj = new OBJModel();
             obj.init(this.window0.gl);
 
-            obj.load(catid_shapenet, id_shapenet).then( res => {
+            obj.load(catid_cad, id_cad).then( res => {
                 resolve(obj);
             });
         });
@@ -126,15 +128,6 @@ class SceneViewer {
 		return base;
 	}
 
-	load_csv(filename) {
-		return new Promise((resolve, reject) => {
-			return xhr("GET", "/download/csv/" + filename).then(csv => {
-				csvparse(csv, {comment: '#'}, (err, out) => {
-					resolve(out)
-				});
-			});
-		});
-	}
 	
     advance() {
         this.window0.clear();
@@ -155,7 +148,7 @@ class SceneViewer {
 
     mouseclick ( event ) {
 		let vertex_info = this.pvv.get_vertex_info();
-		console.log(vertex_info.id_mesh - 1)
+		console.log(this.icad2cad[vertex_info.id_mesh - 1]);
     }
 
     mousedown ( event ) {
