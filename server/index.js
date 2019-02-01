@@ -52,20 +52,11 @@ app.get("/download/vox/*", function (req, res) {
 	res.sendFile(file);
 });
 
-app.get("/download/mesh/scannet/:id", function (req, res) {
-	let id = req.params.id;
-	
-	let filename = path.join(__dirname, "/static/root/mnt/braxis/ScanNet/internal/scans/checked/", id, id + "_vh_clean_2.ply");
-	res.sendFile(filename);
+app.get("/download/mesh/*", function (req, res) {
+	let file = search_and_find_file(req.params["0"]);
+	res.sendFile(file);
 });
 
-app.get("/download/mesh/shapenet/:catid/:id/*", function (req, res) {
-	let catid = req.params.catid;
-	let id = req.params.id;
-
-	let filename = path.join(__dirname, "/static/root/mnt/braxis/Datasets/ShapeNetCore.v2/", catid, id, req.params["0"]);
-	res.sendFile(filename);
-});
 
 router.get("/", function (req, res) {
     res.redirect(path.join(Config.base_url, "/0"));

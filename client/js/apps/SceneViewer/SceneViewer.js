@@ -38,57 +38,67 @@ class SceneViewer {
 		this.pvv.init(this.window0.gl, this.window0.window_width, this.window0.window_height);
 		this.pvv.set_active();
 
-		let filename_scene = SceneViewer.basename(filename);
-		this.load_scene(filename_scene).then(scene => {
-			this.models.push(scene);
+		xhr_json("GET", "/download/json/" + filename).then(res => {
+			let trs_global = this.parse_trs(res["trs_global"]["trans"], res["trs_global"]["rot"], res["trs_global"]["scale"]);
+			let t0 = new THREE.Matrix4();
+			let r0 = new THREE.Matrix4();
+			let s0 = new THREE.Matrix4();
 
-			this.icad2cad = {};
-			xhr_json("GET", "/download/json/" + filename).then(res => {
-				for (let i in res) {
-					console.log(res[i]);
-					let id_cad = res[i]["id_cad"];
-					let catid_cad = res[i]["catid_cad"];
-					let trs = this.parse_trs(res[i]["trs"]["trans"], res[i]["trs"]["rot"], res[i]["trs"]["scale"]);
+			t0.makeTranslation(trs_global.trans.x, trs_global.trans.y, trs_global.trans.z);
+			r0.makeRotationFromQuaternion(trs_global.rot);
+			s0.makeScale(trs_global.scale.x, trs_global.scale.y, trs_global.scale.z);
 
-					this.load_obj(catid_cad, id_cad).then(obj => {
+			let M_global = new THREE.Matrix4();
+			M_global.premultiply(s0);
+			M_global.premultiply(r0);
+			M_global.premultiply(t0);
 
-						obj.scale_matrix.makeScale(trs.scale.x, trs.scale.y, trs.scale.z);
-						obj.rotation_matrix.makeRotationFromQuaternion(trs.rot);
-						obj.translation_matrix.makeTranslation(trs.trans.x, trs.trans.y, trs.trans.z);
-						obj.calc_model_matrix();
-						//obj.model_matrix.premultiply(scene.rotation_matrix);
-						//obj.model_matrix.premultiply(scene.translation_matrix);
+			for (let [i,mesh] of Object.entries(res["meshes"])) {
+				let filename = mesh["filename"];
+				let trs = this.parse_trs(mesh["trs"]["trans"], mesh["trs"]["rot"], mesh["trs"]["scale"]);
 
-						let t0 = new THREE.Vector3(0, 0, 0); let q0 = new THREE.Quaternion(); let s0 = new THREE.Vector3(0, 0, 0); 
-						obj.model_matrix.decompose(t0, q0, s0);
+				this.load_mesh(filename).then(obj => {
 
-						let trans = (new THREE.Matrix4()).makeTranslation(t0.x, t0.y, t0.z);
-						let rot = (new THREE.Matrix4()).makeRotationFromQuaternion(q0);
-						//rot.identity();
-						let scale = (new THREE.Matrix4()).makeScale(s0.x, s0.y, s0.z);
+					obj.scale_matrix.makeScale(trs.scale.x, trs.scale.y, trs.scale.z);
+					obj.rotation_matrix.makeRotationFromQuaternion(trs.rot);
+					obj.translation_matrix.makeTranslation(trs.trans.x, trs.trans.y, trs.trans.z);
+					obj.calc_model_matrix();
 
-						let label_buffer = new Int32Array(obj.position_buffer.length/3);
-						label_buffer.fill(i + 1)
-						this.icad2cad[i] = {"catid_cad" : catid_cad, "id_cad" : id_cad};
-						obj.init_vao_offscreen(this.pvv.gl, obj.position_buffer, label_buffer)
+					this.correct_mesh_trs(obj, M_global);
 
-						obj.translation_matrix = trans;
-						obj.rotation_matrix = rot;
-						obj.scale_matrix = scale;
+					let label_buffer = new Int32Array(obj.position_buffer.length/3);
+					label_buffer.fill(i + 1)
 
-						var wireframe = new Wireframe();
-						wireframe.init(this.window0.gl);
-						wireframe.is_visible = 1;
-						wireframe.update_box(obj.bounding_box.x, obj.bounding_box.y, obj.bounding_box.z);
-						wireframe.model_matrix = obj.model_matrix;
-						this.models.push(obj);
-						this.models.push(wireframe);
-					});
-				}
-			});
+					this.models.push(obj);
+
+					//let wireframe = new Wireframe();
+					//wireframe.init(this.window0.gl);
+					//wireframe.is_visible = 1;
+					//wireframe.update_box(obj.bounding_box.x, obj.bounding_box.y, obj.bounding_box.z);
+					//wireframe.model_matrix = obj.model_matrix;
+					//this.models.push(wireframe);
+				});
+			}
 		});
+
 		this.advance();
     }
+
+	correct_mesh_trs(model, M_global) {
+		let model_matrix = model.model_matrix;
+		model_matrix.premultiply(M_global);
+		let t = new THREE.Vector3(); let q = new THREE.Quaternion(); let s = new THREE.Vector3();
+		model_matrix.decompose(t, q, s);
+
+		let trans = (new THREE.Matrix4()).makeTranslation(t.x, t.y, t.z);
+		let rot = (new THREE.Matrix4()).makeRotationFromQuaternion(q);
+		let scale = (new THREE.Matrix4()).makeScale(s.x, s.y, s.z);
+
+		model.translation_matrix = trans;
+		model.rotation_matrix = rot;
+		model.scale_matrix = scale;
+		model.calc_model_matrix();
+	}
 	
 	parse_trs(trans0, rot0, scale0) {
 		let scale = new THREE.Vector3().fromArray(scale0.slice(0));
@@ -99,14 +109,24 @@ class SceneViewer {
 		return {"trans" : trans, "rot" : rot, "scale" : scale};
 	}
 
-    load_obj(catid_cad, id_cad) {
+    load_mesh(filename, trs) {
         return new Promise((resolve, reject) => {
-            let obj = new OBJModel();
-            obj.init(this.window0.gl);
+			if (filename.endsWith("obj")) {
+				let obj = new OBJModel();
+				obj.init(this.window0.gl);
 
-            obj.load(catid_cad, id_cad).then( res => {
-                resolve(obj);
-            });
+				obj.load(filename).then( res => {
+					resolve(obj);
+				});
+			} else if (filename.endsWith("ply")) {
+				let ply = new SceneModel();
+				ply.init(this.window0.gl);
+
+				ply.load(filename).then( res => {
+					resolve(ply);
+				});
+
+			}
         });
 	}
 
@@ -137,7 +157,6 @@ class SceneViewer {
 		}
 		
 		let pos_mouse = this.window0.get_pos_mouse();
-		this.pvv.pick(pos_mouse.x, pos_mouse.y, new Float32Array(this.window0.camera.matrixWorldInverse.elements), new Float32Array(this.window0.projection_matrix.elements), this.window0.window_width, this.window0.window_height, this.models);
         
 		requestAnimationFrame(this.advance_ref);
     }
@@ -147,8 +166,6 @@ class SceneViewer {
     }
 
     mouseclick ( event ) {
-		let vertex_info = this.pvv.get_vertex_info();
-		console.log(this.icad2cad[vertex_info.id_mesh - 1]);
     }
 
     mousedown ( event ) {

@@ -162,26 +162,27 @@ class SceneModel {
         };
         return data;
     }
+    
+	calc_model_matrix() {
+        this.model_matrix.identity();
+        this.model_matrix.premultiply(this.scale_matrix);
+        this.model_matrix.premultiply(this.rotation_matrix);
+        this.model_matrix.premultiply(this.translation_matrix);
+    }
 
-    load_mesh (collection, id) {
+    load_from_server(filename) {
         return new Promise((resolve, reject) => {
             var loader = new PLYLoader();
-			let filename = "/download/mesh/" + collection + "/" + id;
-			console.log(filename)
+			filename = "/download/mesh/" + filename;
             loader.load(filename, geometry => {
-				console.log(geometry)
                 geometry.computeVertexNormals();
 
                 this.vao.n_vertices = geometry.attributes.position.count;
                 this.vao.n_elements = geometry.index.count;
 
                 this.set_buffers_from_mesh0(geometry);
-                this.rotation_matrix.makeRotationAxis(new THREE.Vector3(1, 0, 0), -Math.PI*0.5);
 
                 geometry.computeBoundingBox();
-                let center = geometry.boundingBox.getCenter();
-                center.applyMatrix4(this.rotation_matrix);
-                this.translation_matrix.makeTranslation(-center.x, -center.y, -center.z);
 
                 this.model_matrix.identity();
                 this.model_matrix.premultiply(this.scale_matrix);
@@ -261,10 +262,10 @@ class SceneModel {
         this.index_buffer = geometry.index.array;
     }
 
-    load_scene(collection, id) {
+    load(filename) {
 		return new Promise((resolve, reject) => {
-			this.load_mesh(collection, id).then(values => {
-				this.id = id;
+			this.load_from_server(filename).then(values => {
+				this.id = filename;
 				this.is_active = 1;
 				this.is_visible = 1;
 				resolve();

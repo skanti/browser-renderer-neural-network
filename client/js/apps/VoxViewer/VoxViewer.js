@@ -29,6 +29,10 @@ class VoxData {
         this.grid2world = null;
         this.sdf = null;
         this.pdf = null;
+
+		this.nocx = null;
+		this.nocy = null;
+		this.nocz = null;
     }
 }
 
@@ -74,12 +78,14 @@ class VoxViewer {
 
 	load_and_prepare_vox(filename) {
 		let filetype = -1;
-		if (filename.endsWith("vox2"))
+		if (filename.endsWith("vox"))
 			filetype = 0;
-		else if (filename.endsWith("vox"))
+		else if (filename.endsWith("vox2"))
 			filetype = 1;
 		else if (filename.endsWith("df"))
 			filetype = 2;
+		else if (filename.endsWith("voxnoc"))
+			filetype = 3;
 
 		console.log(filetype)
 
@@ -87,7 +93,7 @@ class VoxViewer {
 			let vox0 = VoxViewer.unpack_binary(buff0, filetype);
 			this.vox0 = vox0;
 
-			this.vao_data0 = VoxViewer.create_vao_data(vox0);
+			this.vao_data0 = VoxViewer.create_vao_data(vox0, filetype);
 			this.vao0.upload_data(this.vao_data0.n_vertices, this.vao_data0.n_instances, this.vao_data0.vertices, this.vao_data0.normals, this.vao_data0.positions, this.vao_data0.colors);
 			this.vao0.set_active();
         });
@@ -100,7 +106,7 @@ class VoxViewer {
         requestAnimationFrame(this.advance_ref);
     }
 
-    static create_vao_data(vox) {
+    static create_vao_data(vox, filetype) {
         let vao_data = new VAOData();
 
         let dims = vox.dims;
@@ -117,14 +123,20 @@ class VoxViewer {
 			for (let j = 0; j < dims[1]; j++) {
 				for (let i = 0; i < dims[0]; i++) {
 					let index1 = k*dims[1]*dims[0] + j*dims[0] + i;
-					if (Math.abs(sdf[index1]) < res || pdf[index1] > 0) {
+					if (Math.abs(sdf[index1]) < 2.0*res || pdf[index1] > 0) {
 						positions.push(i/dimmax - 0.5);
 						positions.push(j/dimmax - 0.5);
 						positions.push(k/dimmax - 0.5);
-						let color1 = VoxViewer.convert_value_to_rgb(pdf[index1])
-						colors.push(color1[0]);
-						colors.push(color1[1]);
-						colors.push(color1[2]);
+						if (filetype == 3) {
+							colors.push(vox.nocx[index1]);
+							colors.push(vox.nocy[index1]);
+							colors.push(vox.nocz[index1]);
+						} else {
+							let color1 = VoxViewer.convert_value_to_rgb(pdf[index1])
+							colors.push(color1[0]);
+							colors.push(color1[1]);
+							colors.push(color1[2]);
+						}
 						n_size++;
 					}
 				}
@@ -219,9 +231,14 @@ class VoxViewer {
 
         const n_elems = dims[0]*dims[1]*dims[2];
         vox.sdf = new Float32Array(buffer0, (4 + 16 + 0)*4, n_elems);
-		if (filetype == 0)
+		if (filetype == 1) { // <-- vox2 
 			vox.pdf = new Float32Array(buffer0, (4 + 16 + n_elems)*4, n_elems);
-		else
+		} else if (filetype == 3) { // <-- voxnoc
+			vox.pdf = new Float32Array(buffer0, (4 + 16 + n_elems)*4, n_elems);
+			vox.nocx = new Float32Array(buffer0, (4 + 16 + 2*n_elems)*4, n_elems);
+			vox.nocy = new Float32Array(buffer0, (4 + 16 + 3*n_elems)*4, n_elems);
+			vox.nocz = new Float32Array(buffer0, (4 + 16 + 4*n_elems)*4, n_elems);
+		} else
 			vox.pdf = new Float32Array(n_elems);
 
         return vox;

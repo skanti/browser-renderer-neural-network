@@ -222,22 +222,34 @@ class OBJModel {
 
         this.bbox_center = new THREE.Vector3(center_x, center_y, center_z);
         this.bounding_box = new THREE.Vector3(max_x, max_y, max_z);
-    }
+	}
 
-    load_from_server(catid_shapenet, id_shapenet) {
+	get_basename(str) {
+		let base = new String(str).substring(str.lastIndexOf('/') + 1); 
+		if(base.lastIndexOf(".") != -1)       
+			base = base.substring(0, base.lastIndexOf("."));
+		return base;
+	}
+
+	get_directory(str) {
+		return str.substring(0,str.lastIndexOf("/")+1);
+	}
+
+    load_from_server(filename) {
         return new Promise((resolve, reject) => {
             //-> load meshes
-            let basepath = "/download/mesh/shapenet/" + catid_shapenet + "/" + id_shapenet;
+
+            let basepath = "/download/mesh/" + this.get_directory(filename);
 
             let mtl_loader = new THREE.MTLLoader();
-            mtl_loader.setTexturePath(basepath + "/models/");
+            mtl_loader.setTexturePath(basepath);
             mtl_loader.setPath(basepath);
-            mtl_loader.load("/models/model_normalized.mtl", (materials) => {
+            mtl_loader.load("/model_normalized.mtl", (materials) => {
                 materials.preload();
                 let obj_loader = new THREE.OBJLoader();
                 obj_loader.setPath(basepath);
                 obj_loader.setMaterials(materials);
-                obj_loader.load("/models/model_normalized.obj", (geometry) => {
+                obj_loader.load("/model_normalized.obj", (geometry) => {
                     this.is_all_textures_loaded(materials).then(() => {
                         resolve({geometry : geometry , materials : materials});
                     });
