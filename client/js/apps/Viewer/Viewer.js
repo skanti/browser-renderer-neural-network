@@ -7,7 +7,7 @@ plotly.register([
 	require('plotly.js/lib/histogram'),
 ]);
 
-import RootUI from './view/RootUI';
+import {RootUI, ImgUI} from './view/RootUI';
 import BrowseUI from './view/BrowseUI';
 import MeshOptionsUI from './view/MeshOptionsUI';
 import MetadataUI from './view/MetadataUI';
@@ -50,10 +50,29 @@ class VAOData {
     }
 }
 
-class VoxViewer {
+class Viewer {
 
     init(filename) {
+		this.suffix = filename.split('.').pop();
+		console.log("filetype:", this.suffix);
 
+		let vox_files = new Set(["vox", "vox2", "df", "voxnoc"]);
+		let image_files = new Set(["jpg", "jpeg", "png", "gif"]);
+
+		if (vox_files.has(this.suffix))
+			this.load_and_render_vox(filename);
+		else if (image_files.has(this.suffix))
+			this.load_and_draw_image(filename);
+		else
+			console.log("filetype not accepted");
+    }
+
+	load_and_draw_image(filename) {
+        this.draw_root(false);
+        ReactDOM.render(<ImgUI src={"/download/image/" + filename}/>, document.getElementById('id_div_pic'));
+	}
+
+	load_and_render_vox(filename) {
         this.vox = new VoxData();
         this.vao0 = new VoxelGridVAO();
         this.vao_data0 = new VAOData();
@@ -61,39 +80,25 @@ class VoxViewer {
 
         this.advance_ref = this.advance.bind(this);
 
-        this.draw_root();
+        this.draw_root(true);
 		//this.draw_browse_button();
         //this.draw_meshoptions();
 
-		this.window0 = new WindowManager("id_div_panel0", "id_div_canvas0");
+		this.window0 = new WindowManager("id_div_panel", "id_div_canvas");
 		this.window0.init();
 		this.attach_listener(this.window0);
 		this.vao0.init(this.window0.gl);
 
-		this.load_and_prepare_vox(filename);
-
 		this.advance();
 
-    }
-
-	load_and_prepare_vox(filename) {
-		let filetype = -1;
-		if (filename.endsWith("vox"))
-			filetype = 0;
-		else if (filename.endsWith("vox2"))
-			filetype = 1;
-		else if (filename.endsWith("df"))
-			filetype = 2;
-		else if (filename.endsWith("voxnoc"))
-			filetype = 3;
-
-		console.log(filetype)
-
 		this.load_vox(filename).then(buff0 => {
-			let vox0 = VoxViewer.unpack_binary(buff0, filetype);
+			let has_pdf = this.suffix === "vox2"
+			let has_noc = this.suffix === "voxnoc"
+
+			let vox0 = this.unpack_binary(buff0, has_pdf, has_noc);
 			this.vox0 = vox0;
 
-			this.vao_data0 = VoxViewer.create_vao_data(vox0, filetype);
+			this.vao_data0 = this.create_vao_data(vox0, has_pdf, has_noc);
 			this.vao0.upload_data(this.vao_data0.n_vertices, this.vao_data0.n_instances, this.vao_data0.vertices, this.vao_data0.normals, this.vao_data0.positions, this.vao_data0.colors);
 			this.vao0.set_active();
         });
@@ -106,7 +111,7 @@ class VoxViewer {
         requestAnimationFrame(this.advance_ref);
     }
 
-    static create_vao_data(vox, filetype) {
+    create_vao_data(vox, has_pdf=false, has_noc=false) {
         let vao_data = new VAOData();
 
         let dims = vox.dims;
@@ -127,12 +132,17 @@ class VoxViewer {
 						positions.push(i/dimmax - 0.5);
 						positions.push(j/dimmax - 0.5);
 						positions.push(k/dimmax - 0.5);
-						if (filetype == 3) {
+						if (has_noc) {
 							colors.push(vox.nocx[index1]);
 							colors.push(vox.nocy[index1]);
 							colors.push(vox.nocz[index1]);
+						} else if (has_pdf) {
+							let color1 = this.convert_value_to_rgb(pdf[index1])
+							colors.push(color1[0]);
+							colors.push(color1[1]);
+							colors.push(color1[2]);
 						} else {
-							let color1 = VoxViewer.convert_value_to_rgb(pdf[index1])
+							let color1 = this.convert_value_to_rgb(0);
 							colors.push(color1[0]);
 							colors.push(color1[1]);
 							colors.push(color1[2]);
@@ -160,7 +170,7 @@ class VoxViewer {
         return vao_data;
     }
 	
-	static convert_hsv_to_rgb(hsv) {
+	convert_hsv_to_rgb(hsv) {
 		let H = hsv[0];
 		let S = hsv[1];
 		let V = hsv[2];
@@ -187,38 +197,19 @@ class VoxViewer {
 			return [V, p, q];
 	}
 
-	static convert_value_to_rgb(val, vmin = -0.2, vmax = 1) {
+	convert_value_to_rgb(val, vmin = -0.2, vmax = 1) {
 		let val0to1 = (val - vmin) / (vmax - vmin);
 		let x = 1.0 - val0to1;
 		if (x < 0.0)	x = 0.0;
 		if (x > 1.0)	x = 1.0;
-		return VoxViewer.convert_hsv_to_rgb([240.0*x, 1.0, 0.5]);
+		return this.convert_hsv_to_rgb([240.0*x, 1.0, 0.5]);
 	}
 
-	onclick_files() {
-		let val = document.getElementById('id_input_browse').value
-		this.load_and_prepare_vox(val);
-
-	}
-	
-	draw_metadata(cargo) {
-        ReactDOM.render(<MetadataUI cargo={cargo} />, document.getElementById('id_div_metadata'));
-	}
-
-	draw_meshoptions() {
-        ReactDOM.render(<MeshOptionsUI onclick_thresh={this.onclick_thresh.bind(this, 0)} />, document.getElementById('id_meshoptions0'));
-        //ReactDOM.render(<MeshOptionsUI onclick_thresh={this.onclick_thresh.bind(this, 1)} />, document.getElementById('id_meshoptions1'));
-	}
-
-	draw_browse_button() {
-        ReactDOM.render(<BrowseUI label={"Browse files"} onclick={this.onclick_files.bind(this)}/>, document.getElementById('id_div_browse'));
-	}
-
-    draw_root() {
-        ReactDOM.render(<RootUI  />, document.getElementById('id_div_root'));
+    draw_root(is_webgl) {
+        ReactDOM.render(<RootUI  is_webgl={is_webgl}/>, document.getElementById('id_div_root'));
     }
 
-    static unpack_binary(buffer0, filetype) {
+    unpack_binary(buffer0, has_pdf=false, has_noc=false) {
         let vox = new VoxData();
 
         let dims = new Int32Array(buffer0, 0*4, 3);
@@ -231,15 +222,15 @@ class VoxViewer {
 
         const n_elems = dims[0]*dims[1]*dims[2];
         vox.sdf = new Float32Array(buffer0, (4 + 16 + 0)*4, n_elems);
-		if (filetype == 1) { // <-- vox2 
+		if (has_pdf) { // <-- vox2 
 			vox.pdf = new Float32Array(buffer0, (4 + 16 + n_elems)*4, n_elems);
-		} else if (filetype == 3) { // <-- voxnoc
+		} 
+		if (has_noc) { // <-- voxnoc
 			vox.pdf = new Float32Array(buffer0, (4 + 16 + n_elems)*4, n_elems);
 			vox.nocx = new Float32Array(buffer0, (4 + 16 + 2*n_elems)*4, n_elems);
 			vox.nocy = new Float32Array(buffer0, (4 + 16 + 3*n_elems)*4, n_elems);
 			vox.nocz = new Float32Array(buffer0, (4 + 16 + 4*n_elems)*4, n_elems);
-		} else
-			vox.pdf = new Float32Array(n_elems);
+		} 
 
         return vox;
     }
@@ -249,20 +240,29 @@ class VoxViewer {
           return res;
       });
     }
+    
+	touchstart ( event ) {
+        this.window0.touchstart(event);
+    }
 
-    mouseclick ( event ) {
+    touchmove ( event ) {
+        this.window0.touchmove(event);
+    }
+    
+	touchend( event ) {
+        this.window0.touchend(event);
     }
 
     mousedown ( event ) {
         this.window0.mousedown(event);
     }
 
-    mouseup( event ) {
-        this.window0.mouseup(event);
-    }
-
     mousemove ( event ) {
         this.window0.mousemove(event);
+    }
+    
+	mouseup( event ) {
+        this.window0.mouseup(event);
     }
 
     mousewheel ( event ) {
@@ -276,24 +276,27 @@ class VoxViewer {
     attach_listener(window) {
         // -> event listeners
         this.contextmenu_ref = this.contextmenu.bind(this);
-        this.mouseclick_ref = this.mouseclick.bind(this);
-        this.mousemove_ref = this.mousemove.bind(this);
         this.mousedown_ref = this.mousedown.bind(this);
+        this.mousemove_ref = this.mousemove.bind(this);
         this.mouseup_ref = this.mouseup.bind(this);
+        this.touchstart_ref = this.touchstart.bind(this);
+        this.touchmove_ref = this.touchmove.bind(this);
+        this.touchend_ref = this.touchend.bind(this);
         this.mousewheel_ref = this.mousewheel.bind(this);
 
         window.add_listener('contextmenu', this.contextmenu_ref);
-        window.add_listener('click', this.mouseclick_ref);
-        window.add_listener('mousemove', this.mousemove_ref);
         window.add_listener('mousedown', this.mousedown_ref);
+        window.add_listener('mousemove', this.mousemove_ref);
         window.add_listener('mouseup', this.mouseup_ref);
+        window.add_listener('touchstart', this.touchstart_ref);
+        window.add_listener('touchmove', this.touchmove_ref);
+        window.add_listener('touchend', this.touchend_ref);
         window.add_listener('mousewheel', this.mousewheel_ref);
         // <-
     }
 
     dispose_listener(window) {
         window.remove_listener( "contextmenu", this.contextmenu_ref);
-        window.remove_listener( "click", this.mouseclick_ref);
         window.remove_listener( "mousemove", this.mousemove_ref);
         window.remove_listener( "mousedown", this.mousedown_ref);
         window.remove_listener( "mouseup", this.mouseup_ref);
@@ -302,4 +305,4 @@ class VoxViewer {
 
 }
 
-window.VoxViewer = VoxViewer;
+window.Viewer = Viewer;

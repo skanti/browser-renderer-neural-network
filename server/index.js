@@ -57,19 +57,19 @@ app.get("/download/mesh/*", function (req, res) {
 	res.sendFile(file);
 });
 
+app.get("/download/image/*", function (req, res) {
+	let file = search_and_find_file(req.params["0"]);
+	res.sendFile(file);
+});
+
 
 router.get("/", function (req, res) {
     res.redirect(path.join(Config.base_url, "/0"));
 });
 
-router.get("/scene/*", function (req, res) {
-    res.render("SceneViewer", {
-		id_file : req.params["0"]
-	});
-});
 
-router.get("/vox/*", function (req, res) {
-    res.render("VoxViewer", {
+router.get("/*", function (req, res) {
+    res.render("Viewer", {
 		id_file : req.params["0"]
 	});
 });

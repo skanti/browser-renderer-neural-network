@@ -110,6 +110,22 @@ class WindowManager {
     get_camera_pos() {
         return this.camera.position;
     }
+    
+	touchstart(event) {
+		this.navigation.touchstart(event);
+    }
+
+	touchmove(event) {
+        // if (this.is_mouse_in_model_panel()) {
+            this.pos_mouse.x = event.clientX - this.window_left;
+            this.pos_mouse.y = event.clientY - this.window_top;
+            this.navigation.touchmove(event);
+        // }
+    }
+	
+	touchend(event) {
+		this.navigation.touchend(event);
+    }
 
     mousemove(event) {
         // if (this.is_mouse_in_model_panel()) {
@@ -118,16 +134,15 @@ class WindowManager {
             this.navigation.mousemove(event);
         // }
     }
-
+    
     mousedown(event) {
-        // if (this.is_mouse_in_model_panel())
-            this.navigation.mousedown(event);
+		this.navigation.mousedown(event);
     }
 
     mouseup(event) {
-        // if (this.is_mouse_in_model_panel())
-            this.navigation.mouseup(event);
+		this.navigation.mouseup(event);
     }
+    
 
     mousewheel(event) {
         // if (this.is_mouse_in_model_panel())

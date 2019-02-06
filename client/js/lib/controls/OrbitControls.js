@@ -69,7 +69,7 @@ class OrbitControls {
         this.keys = {LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40};
 
         // Mouse buttons
-        this.mouseButtons = {ORBIT: THREE.MOUSE.RIGHT, PAN: THREE.MOUSE.MIDDLE, ZOOM: null};
+        this.mouseButtons = {ORBIT: THREE.MOUSE.LEFT, PAN: THREE.MOUSE.MIDDLE, ZOOM: null};
 
         // for reset
         this.target0 = this.target.clone();
@@ -80,8 +80,8 @@ class OrbitControls {
         this.startEvent = { type: 'start' };
         this.endEvent = { type: 'end' };
 
-        this.STATE0 = { NONE: - 1, ROTATE: 0, DOLLY: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_DOLLY: 4, TOUCH_PAN: 5 };
-        this.STATE = this.STATE0.NONE;
+        this.STATE = { NONE: - 1, ROTATE: 0, DOLLY: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_DOLLY_PAN: 4};
+        this.state = this.STATE.NONE;
 
         this.EPS = 0.000001;
 
@@ -111,7 +111,7 @@ class OrbitControls {
     //
 
     is_camera_moving() {
-        return !(this.STATE === this.STATE0.NONE);
+        return !(this.state === this.STATE.NONE);
     }
 
 
@@ -134,7 +134,7 @@ class OrbitControls {
 
         this.update();
 
-        this.STATE = this.STATE0.NONE;
+        this.state = this.STATE.NONE;
 
     };
 
@@ -161,7 +161,7 @@ class OrbitControls {
         // angle from z-axis around y-axis
         this.spherical.setFromVector3(offset);
 
-        if (this.autoRotate && this.STATE === this.STATE0.NONE) {
+        if (this.autoRotate && this.state === this.STATE.NONE) {
 
             this.rotateLeft(2*Math.PI / 60 / 60*this.autoRotateSpeed);
 
@@ -354,15 +354,92 @@ class OrbitControls {
     // event callbacks - update the camera this.STATE
     //
 
+	handleTouchStartRotate( event ) {
+		this.rotateStart.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+	}
+
+	handleTouchStartDollyPan( event ) {
+		if ( this.enableZoom ) {
+			var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+			var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+			var distance = Math.sqrt( dx * dx + dy * dy );
+			this.dollyStart.set( 0, distance );
+		}
+
+		if ( this.enablePan ) {
+			var x = 0.5 * ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX );
+			var y = 0.5 * ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY );
+
+			this.panStart.set( x, y );
+		}
+	}
+
+
+	handleTouchMoveRotate( event ) {
+
+		//console.log( 'handleTouchMoveRotate' );
+
+		this.rotateEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+
+		this.rotateDelta.subVectors( this.rotateEnd, this.rotateStart ).multiplyScalar( this.rotateSpeed );
+
+		var element = this.domElement === document ? this.domElement.body : this.domElement;
+
+		this.rotateLeft( 2 * Math.PI * this.rotateDelta.x / element.clientHeight ); // yes, height
+
+		this.rotateUp( 2 * Math.PI * this.rotateDelta.y / element.clientHeight );
+
+		this.rotateStart.copy( this.rotateEnd );
+
+		this.update();
+	}
+
+	handleTouchMoveDollyPan( event ) {
+
+		//console.log( 'handleTouchMoveDollyPan' );
+
+		if ( this.enableZoom ) {
+
+			var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+			var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+
+			var distance = Math.sqrt( dx * dx + dy * dy );
+
+			this.dollyEnd.set( 0, distance );
+
+			this.dollyDelta.set( 0, Math.pow( dollyEnd.y / this.dollyStart.y, this.zoomSpeed ) );
+
+			this.dollyIn( this.dollyDelta.y );
+
+			this.dollyStart.copy( this.dollyEnd );
+
+		}
+
+		if ( this.enablePan ) {
+
+			var x = 0.5 * ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX );
+			var y = 0.5 * ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY );
+
+			this.panEnd.set( x, y );
+
+			this.panDelta.subVectors( this.panEnd, this.panStart ).multiplyScalar( this.panSpeed );
+
+			this.pan( panDelta.x, panDelta.y );
+
+			this.panStart.copy( panEnd );
+
+		}
+		this.update();
+	}
+
+
+
     handleMouseDownRotate(event) {
-
         this.rotateStart.set(event.clientX, event.clientY);
-
     }
 
     handleMouseDownDolly(event) {
         this.dollyStart.set(event.clientX, event.clientY);
-
     }
 
     handleMouseDownPan(event) {
@@ -482,27 +559,98 @@ class OrbitControls {
                 if (this.enableRotate === false)
                     return;
                 this.handleMouseDownRotate(event);
-                this.STATE = this.STATE0.ROTATE;
+                this.state = this.STATE.ROTATE;
 
                 break;
-
-            // case this.mouseButtons.ZOOM:
-            //     if (this.enableZoom === false)
-            //         return;
-            //     this.handleMouseDownDolly(event);
-            //     this.STATE = this.STATE0.DOLLY;
-            //     break;
 
             case this.mouseButtons.PAN:
                 if (this.enablePan === false)
                      return;
                 this.handleMouseDownPan(event);
-                this.STATE = this.STATE0.PAN;
+                this.state = this.STATE.PAN;
                 break;
 
         }
 
     }
+
+
+	touchstart( event ) {
+
+		if ( this.enabled === false ) return;
+
+		event.preventDefault();
+
+		switch ( event.touches.length ) {
+
+			case 1:	// one-fingered touch: rotate
+
+				if ( this.enableRotate === false ) return;
+
+				this.handleTouchStartRotate( event );
+
+				this.state = this.STATE.TOUCH_ROTATE;
+
+				break;
+
+			case 2:	// two-fingered touch: dolly-pan
+
+				if ( this.enableZoom === false && this.enablePan === false ) return;
+
+				this.handleTouchStartDollyPan( event );
+
+				this.state = this.STATE.TOUCH_DOLLY_PAN;
+
+				break;
+
+			default:
+
+				this.state = STATE.NONE;
+
+		}
+
+	}
+
+	touchmove( event ) {
+
+		if ( this.enabled === false ) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		switch ( event.touches.length ) {
+
+			case 1: // one-fingered touch: rotate
+
+				if ( this.enableRotate === false ) return;
+				if ( this.state !== this.STATE.TOUCH_ROTATE ) return; // is this needed?
+
+				this.handleTouchMoveRotate( event );
+
+				break;
+
+			case 2: // two-fingered touch: dolly-pan
+
+				if ( this.enableZoom === false && this.enablePan === false ) return;
+				if ( this.state !== this.STATE.TOUCH_DOLLY_PAN ) return; // is this needed?
+
+				this.handleTouchMoveDollyPan( event );
+
+				break;
+
+			default:
+
+				this.state = this.STATE.NONE;
+
+		}
+
+	}
+
+	touchend( event ) {
+		if ( this.enabled === false ) return;
+
+		this.state = this.STATE.NONE;
+	}
 
     mousemove(event) {
 
@@ -511,9 +659,9 @@ class OrbitControls {
 
         event.preventDefault();
 
-        switch (this.STATE) {
+        switch (this.state) {
 
-            case this.STATE0.ROTATE:
+            case this.STATE.ROTATE:
 
                 if (this.enableRotate === false)
                     return;
@@ -522,7 +670,7 @@ class OrbitControls {
 
                 break;
 
-            case this.STATE0.DOLLY:
+            case this.STATE.DOLLY:
 
                 if (this.enableZoom === false)
                     return;
@@ -531,7 +679,7 @@ class OrbitControls {
 
                 break;
 
-            case this.STATE0.PAN:
+            case this.STATE.PAN:
 
                 if (this.enablePan === false)
                     return;
@@ -546,13 +694,13 @@ class OrbitControls {
 
         if (this.enabled === false) return;
 
-        this.STATE = this.STATE0.NONE;
+        this.state = this.STATE.NONE;
 
     }
 
     mousewheel(event) {
 
-        if (this.enabled === false || this.enableZoom === false || ( this.STATE !== this.STATE0.NONE && this.STATE !== this.STATE0.ROTATE )) return;
+        if (this.enabled === false || this.enableZoom === false || ( this.state !== this.STATE.NONE && this.state !== this.STATE.ROTATE )) return;
 
         event.preventDefault();
         event.stopPropagation();
