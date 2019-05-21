@@ -1,11 +1,12 @@
 import * as THREE from 'three/build/three';
 
 import GLProgram from './GLProgram.js';
-import * as Shader from '../shader/PolygonGLSL.js';
+import * as Shader from '../shader/PolygonColorGLSL.js';
 
 class VAOMesh {
     constructor() {
         this.vbo_vertex = 0;
+        this.vbo_color = 0;
         this.ebo = 0;
         this.n_vertices = 0;
         this.n_elements = 0;
@@ -18,16 +19,12 @@ class VAOMesh {
 class Wireframe {
     init(gl) {
         this.gl = gl;
-        this.program = GLProgram.compile_shaders_and_link_with_program(this.gl, Shader.PolygonVS, Shader.PolygonFS);
+        this.program = GLProgram.compile_shaders_and_link_with_program(this.gl, Shader.PolygonColorVS, Shader.PolygonColorFS);
         this.gl.useProgram(this.program);
 
         this.is_active = 0;
         this.is_visible = 0;
         this.is_done = 0;
-
-        // -> buffers
-        this.vertex_buffer = new Float32Array(3*8);
-        // <-
 
         // -> uniforms
         this.model_matrix = new THREE.Matrix4();;
@@ -47,62 +44,74 @@ class Wireframe {
     }
 
     make_box(a, b, c) {
-        return { vertices : new Float32Array([   a,  b,  c,
-                                                -a,  b,  c,
-                                                -a, -b,  c,
-                                                 a, -b,  c,
-                                                 a,  b, -c,
-                                                -a,  b, -c,
-                                                -a, -b, -c,
-                                                 a, -b, -c]),
-                elements: new Uint16Array([ 0, 1,
-                                            1, 2,
-                                            2, 3,
-                                            3, 0,
-                                            4, 5,
-                                            5, 6,
-                                            6, 7,
-                                            7, 4,
-                                            0, 4,
-                                            1, 5,
-                                            2, 6,
-                                            3, 7]),
-                n_vertices : 8,
-                n_elements: 12};
-    }
 
-    set_color_to_green() {
-        this.vao.color.set(0.2, 0.8, 0.2, 1.0);
-    }
+        return { vertices : new Float32Array([
+					-a, -b, -c,   a,  -b, -c, // x
+					-a, -b,  c,   a,  -b,  c, // x
+					-a,  b, -c,   a,   b, -c, // x
+					-a,  b,  c,   a,   b,  c, // x
 
-    set_color_to_red() {
-        this.vao.color.set(0.8, 0.2, 0.2, 1.0);
+					-a, -b, -c,  -a,  b, -c, // y
+					 a, -b, -c,   a,  b, -c, // y
+					-a, -b,  c,  -a,  b,  c, // y
+					 a, -b,  c,   a,  b,  c, // y
+
+					-a, -b, -c,  -a, -b,  c, // z
+					 a, -b, -c,   a, -b,  c, // z
+					-a,  b, -c,  -a,  b,  c, // z
+					 a,  b, -c,   a,  b,  c]),
+
+        		colors : 	new Float32Array([   
+						0, 0, 0,   1, 0, 0, 
+						1, 0, 0,   1, 0, 0, 
+						1, 0, 0,   1, 0, 0, 
+						1, 0, 0,   1, 1, 1, 
+
+						0, 0, 0,   0, 1, 0, 
+						0, 1, 0,   0, 1, 0, 
+						0, 1, 0,   0, 1, 0, 
+						0, 1, 0,   1, 1, 1, 
+
+						0, 0, 0,   0, 0, 1, 
+						0, 0, 1,   0, 0, 1, 
+						0, 0, 1,   0, 0, 1, 
+						0, 0, 1,   1, 1, 1]),
+                elements: new Uint16Array([]),
+                n_vertices : 24,
+                n_elements: 0};
     }
 
     init_vao() {
         this.gl.useProgram(this.program);
 
         this.box = this.make_box(0.5, 0.5, 0.5);
-        this.vao.n_elements = this.box.n_elements;
         this.vao.n_vertices = this.box.n_vertices;
+        this.vao.n_elements = this.box.n_elements;
 
         // -> vbo vertex
         this.vao.vbo_vertex = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.vbo_vertex);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, this.box.vertices, this.gl.STATIC_DRAW);
         this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.enableVertexAttribArray(0);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+        // <-
+        
+		// -> vbo color
+        this.vao.vbo_color = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.vbo_color);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.box.colors, this.gl.STATIC_DRAW);
+        this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(1);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         // <-
 
         // -> ebo
-        this.vao.ebo = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.vao.ebo);
-        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, this.box.elements, this.gl.STATIC_DRAW);
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null);
+        //this.vao.ebo = this.gl.createBuffer();
+        //this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.vao.ebo);
+        //this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, this.box.elements, this.gl.STATIC_DRAW);
+        //this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null);
         // <-
-
-        this.vao.color = new THREE.Vector4(0.8, 0.2, 0.2, 1.0);
     }
 
     update_box(a, b, c) {
@@ -132,18 +141,18 @@ class Wireframe {
             this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 0, 0);
             this.gl.enableVertexAttribArray(0);
 
-            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.vao.ebo);
-            this.gl.uniform4f(this.gl.getUniformLocation(this.program, "color"), this.vao.color.x, this.vao.color.y, this.vao.color.z, this.vao.color.w);
-            
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.vbo_color);
+            this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, false, 0, 0);
+            this.gl.enableVertexAttribArray(1);
+
 			this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.program, "model_matrix"), false, new Float32Array(this.model_matrix.elements));
             this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.program, "view_matrix"), false, new Float32Array(view_matrix.elements));
             this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.program, "projection_matrix"), false, new Float32Array(projection_matrix.elements));
 
-            this.gl.drawElements(this.gl.LINES, this.vao.n_elements*2, this.gl.UNSIGNED_SHORT, 0);
+            this.gl.drawArrays(this.gl.LINES, 0, 24)
 
             this.gl.useProgram(null);
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
-            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null);
         }
     }
 

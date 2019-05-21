@@ -6,6 +6,7 @@ import * as PolygonInstanceGLSL from '../../lib/shader/PolygonInstanceGLSL'
 import WindowManager from "../Common/WindowManager"
 import VoxelGridVAO from "../../lib/vao/VoxelGrid"
 import * as Cube from "../../lib/geometry/Cube"
+import Wireframe from "../../lib/vao/Wireframe"
 
 class VoxData {
     constructor() {
@@ -42,24 +43,35 @@ class VoxRenderer {
         this.vao0 = new VoxelGridVAO();
         this.vao_data0 = new VAOData();
         this.window0 = window0;
+        this.wireframe = new Wireframe();
 
 
 		this.vao0.init(this.window0.gl);
 
-		return this.load_vox(filename).then(buff0 => {
-			let has_pdf = this.suffix === "vox2"
-			let has_noc = this.suffix === "voxnoc"
+		return this.load_vox(filename).then(res => {
+			this.vox0 = res["vox"];
 
-			let vox0 = this.unpack_binary(buff0, has_pdf, has_noc);
-			this.vox0 = vox0;
+			this.suffix = filename.split('.').pop();
+			let colormode = "none";
 
-			this.vao_data0 = this.create_vao_data(vox0, has_pdf, has_noc);
+			if (this.suffix == "vox2")
+				colormode = "pdf";
+			else if (this.suffix == "voxnoc")
+				colormode = "noc";
+
+
+			this.vao_data0 = this.create_vao_data(this.vox0, colormode)
 			this.vao0.upload_data(this.vao_data0.n_vertices, this.vao_data0.n_instances, this.vao_data0.vertices, this.vao_data0.normals, this.vao_data0.positions, this.vao_data0.colors);
 			this.vao0.set_active();
+
+			this.wireframe.init(this.window0.gl);
+			let dims = this.vox0.dims;
+        	let dimmax = Math.max(Math.max(dims[0], dims[1]), dims[2]);
+			this.wireframe.update_box(0.5*dims[0]/dimmax, 0.5*dims[1]/dimmax, 0.5*dims[2]/dimmax);
+			this.wireframe.is_visible = 1;
         });
     }
-
-	create_vao_data(vox, has_pdf=false, has_noc=false) {
+	create_vao_data(vox, colormode="none", should_rotate=false, only_surface=false) {
         let vao_data = new VAOData();
 
         let dims = vox.dims;
@@ -76,24 +88,28 @@ class VoxRenderer {
 			for (let j = 0; j < dims[1]; j++) {
 				for (let i = 0; i < dims[0]; i++) {
 					let index1 = k*dims[1]*dims[0] + j*dims[0] + i;
-					if (Math.abs(sdf[index1]) < 2.0*res || pdf[index1] > 0) {
-						positions.push(i/dimmax - 0.5);
-						positions.push(j/dimmax - 0.5);
-						positions.push(k/dimmax - 0.5);
-						if (has_noc) {
-							colors.push(vox.nocx[index1]);
-							colors.push(vox.nocy[index1]);
-							colors.push(vox.nocz[index1]);
-						} else if (has_pdf) {
+					if (Math.abs(sdf[index1]) <= 2.0*res) {
+						positions.push(i/dimmax - 0.5*dims[0]/dimmax);
+						positions.push(j/dimmax - 0.5*dims[1]/dimmax);
+						positions.push(k/dimmax - 0.5*dims[2]/dimmax);
+						if (colormode == "pdf") {
 							let color1 = this.convert_value_to_rgb(pdf[index1])
 							colors.push(color1[0]);
 							colors.push(color1[1]);
 							colors.push(color1[2]);
-						} else {
-							let color1 = this.convert_value_to_rgb(0);
+						} else if (colormode == "noc") {
+							colors.push(vox.nocx[index1]);
+							colors.push(vox.nocy[index1]);
+							colors.push(vox.nocz[index1]);
+						} else if (colormode == "bbox") {
+							let color1 = this.convert_value_to_rgb(vox.bbox[index1])
 							colors.push(color1[0]);
 							colors.push(color1[1]);
 							colors.push(color1[2]);
+						} else if (colormode == "none") {
+							colors.push(0.2);
+							colors.push(0.2);
+							colors.push(0.2);
 						}
 						n_size++;
 					}
@@ -104,8 +120,10 @@ class VoxRenderer {
         vao_data.scale = 0.45/dimmax;
         vao_data.model_matrix = new THREE.Matrix4();
         let rot = new THREE.Matrix4();
-        rot.makeRotationAxis(new THREE.Vector3(1, 0, 0), -Math.PI*0.5);
-        vao_data.model_matrix.premultiply(rot);
+		if (should_rotate) {
+			rot.makeRotationAxis(new THREE.Vector3(1, 0, 0), -Math.PI*0.5);
+			vao_data.model_matrix.premultiply(rot);
+		}
 
         let cube = Cube.create_cube();
         vao_data.vertices = cube.vertices;``
@@ -152,8 +170,23 @@ class VoxRenderer {
 		if (x > 1.0)	x = 1.0;
 		return this.convert_hsv_to_rgb([240.0*x, 1.0, 0.5]);
 	}
-    
-	unpack_binary(buffer0, has_pdf=false, has_noc=false) {
+
+	unpack_binary(filename, buffer0) {
+		let suffix = filename.split('.').pop();
+		let vox_files = new Set(["vox", "vox2", "df", "sdf", "voxnoc", "voxsis"]);
+
+		if (vox_files.has(this.suffix) === false) {
+			console.log("Filetype not known.");
+			return 0;
+		}
+
+		let is_col_major = true;
+
+		if (suffix == "df")
+			is_col_major = false;
+		else if (suffix == "sdf")
+			is_col_major = false;
+
         let vox = new VoxData();
 
         let dims = new Int32Array(buffer0, 0*4, 3);
@@ -162,28 +195,44 @@ class VoxRenderer {
         vox.res = res;
         let grid2world = new Float32Array(buffer0, 4*4, 16);
         vox.grid2world
-		console.log(vox.dims)
+		
+		let offset = (4 + 16)*4;
 
         const n_elems = dims[0]*dims[1]*dims[2];
-        vox.sdf = new Float32Array(buffer0, (4 + 16 + 0)*4, n_elems);
-		vox.pdf = new Float32Array(n_elems,0);
-		if (has_pdf) { // <-- vox2 
-			vox.pdf = new Float32Array(buffer0, (4 + 16 + n_elems)*4, n_elems);
+		console.log("dims", vox.dims, dims, n_elems);
+        vox.sdf = new Float32Array(buffer0, offset, n_elems);
+		offset += n_elems*4;
+
+		if (buffer0.byteLength > offset) { // <-- vox2 
+			vox.pdf = new Float32Array(buffer0, offset, n_elems);
+			offset += n_elems*4;
 		} 
-		if (has_noc) { // <-- voxnoc
-			vox.pdf = new Float32Array(buffer0, (4 + 16 + n_elems)*4, n_elems);
-			vox.nocx = new Float32Array(buffer0, (4 + 16 + 2*n_elems)*4, n_elems);
-			vox.nocy = new Float32Array(buffer0, (4 + 16 + 3*n_elems)*4, n_elems);
-			vox.nocz = new Float32Array(buffer0, (4 + 16 + 4*n_elems)*4, n_elems);
+		if (buffer0.byteLength > offset) { // <-- voxnoc
+			vox.nocx = new Float32Array(buffer0, offset, n_elems);
+			offset += n_elems*4;
+			vox.nocy = new Float32Array(buffer0, offset, n_elems);
+			offset += n_elems*4;
+			vox.nocz = new Float32Array(buffer0, offset, n_elems);
+			offset += n_elems*4;
 		} 
+		if (buffer0.byteLength > offset) { // <-- voxnoc
+			vox.bbox = new Float32Array(buffer0, offset, n_elems);
+			offset += n_elems*4;
+		}
 
         return vox;
     }
+    
+    
+	load_vox(filename) {
+		this.suffix = filename.split('.').pop();
 
-    load_vox(id) {
-      return xhr_arraybuffer("GET", "/download/vox/" + id).then(res => {
-          return res;
-      });
+      return xhr_arraybuffer("GET", "/download/vox/" + filename).then(res => {
+		  let vox = this.unpack_binary(filename, res);
+          return {"filename" : filename, "vox" : vox};
+      }).catch(err => {
+		  return {"filename" : filename, "vox" : null};
+	  });
     }
 
 	
@@ -191,6 +240,7 @@ class VoxRenderer {
         this.window0.clear();
         this.window0.advance(0, 16);
         this.vao0.draw(this.vao_data0.scale, this.vao_data0.model_matrix, this.window0.camera.matrixWorldInverse, this.window0.projection_matrix);
+        this.wireframe.draw(this.window0.camera.matrixWorldInverse, this.window0.projection_matrix);
 		
 		let pos_mouse = this.window0.get_pos_mouse();
     }

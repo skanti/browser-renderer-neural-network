@@ -238,30 +238,16 @@ class OBJModel {
     load_from_server(filename) {
         return new Promise((resolve, reject) => {
             //-> load meshes
-
-            let basepath = "/download/mesh/" + this.get_directory(filename);
-
-            let mtl_loader = new THREE.MTLLoader();
-            mtl_loader.setTexturePath(basepath);
-            mtl_loader.setPath(basepath);
-            mtl_loader.load("/model_normalized.mtl", (materials) => {
-                materials.preload();
-                let obj_loader = new THREE.OBJLoader();
-                obj_loader.setPath(basepath);
-                obj_loader.setMaterials(materials);
-                obj_loader.load("/model_normalized.obj", (geometry) => {
-                    this.is_all_textures_loaded(materials).then(() => {
-                        resolve({geometry : geometry , materials : materials});
-                    });
-
-                });
-            });
+			let obj_loader = new THREE.OBJLoader();
+			obj_loader.load("/download/mesh/" + filename, (geometry) => {
+				resolve({geometry : geometry , materials : null});
+			});
         });
     }
 
-    load(catid_shapenet, id_shapenet) {
+    load(filename_mesh) {
         return new Promise((resolve, reject) => {
-            this.load_from_server(catid_shapenet, id_shapenet).then( (res) => {
+            this.load_from_server(filename_mesh).then( (res) => {
                 this.geometry = res.geometry;
                 this.materials = res.materials;
                 this.init_vao(res.geometry, res.materials);
@@ -320,18 +306,29 @@ class OBJModel {
         let counter_info = 0;
         let map_info = {};
         this.gl.useProgram(program);
-        for (let key in materials.materialsInfo) {
-            let mat = materials.materialsInfo[key];
-            let kd = new Float32Array(mat.kd);
-            this.gl.uniform3fv(this.gl.getUniformLocation(program, "material[" + counter_info + "].kd"), kd);
-            let ka = new Float32Array(mat.ka);
-            this.gl.uniform3fv(this.gl.getUniformLocation(program, "material[" + counter_info + "].ka"), ka);
-            let ks = new Float32Array(mat.ks);
-            this.gl.uniform3fv(this.gl.getUniformLocation(program, "material[" + counter_info + "].ks"), ks);
-            let shininess = 10;
-            this.gl.uniform1f(this.gl.getUniformLocation(program, "material[" + counter_info + "].shininess"), shininess);
-            map_info[key] = counter_info++;
-        }
+		if (materials !== null) {
+			for (let key in materials.materialsInfo) {
+				let mat = materials.materialsInfo[key];
+				let kd = new Float32Array(mat.kd);
+				this.gl.uniform3fv(this.gl.getUniformLocation(program, "material[" + counter_info + "].kd"), kd);
+				let ka = new Float32Array(mat.ka);
+				this.gl.uniform3fv(this.gl.getUniformLocation(program, "material[" + counter_info + "].ka"), ka);
+				let ks = new Float32Array(mat.ks);
+				this.gl.uniform3fv(this.gl.getUniformLocation(program, "material[" + counter_info + "].ks"), ks);
+				let shininess = 10;
+				this.gl.uniform1f(this.gl.getUniformLocation(program, "material[" + counter_info + "].shininess"), shininess);
+				map_info[key] = counter_info++;
+			}
+		} else {
+			let kd = new Float32Array([0.3, 0.3, 0.3]);
+			this.gl.uniform3fv(this.gl.getUniformLocation(program, "material[0].kd"), kd);
+			let ka = new Float32Array([1,1,1]);
+			this.gl.uniform3fv(this.gl.getUniformLocation(program, "material[0].ka"), ka);
+			let ks = new Float32Array([1,1,1]);
+			this.gl.uniform3fv(this.gl.getUniformLocation(program, "material[0].ks"), ks);
+			let shininess = 10;
+			this.gl.uniform1f(this.gl.getUniformLocation(program, "material[0].shininess"), shininess);
+		}
         return map_info;
     }
 
@@ -339,18 +336,20 @@ class OBJModel {
         let counter_info = 0;
         let map_info = {};
         this.gl.useProgram(program);
-        for (var key in materials.materials) {
-            let tex = materials.materials[key];
-            if (tex.map !== null) {
-                this.gl.activeTexture(this.gl.TEXTURE0 + counter_info);
-                vao.tex[counter_info] = this.gl.createTexture();
-                this.gl.bindTexture(this.gl.TEXTURE_2D, vao.tex[counter_info]);
-                this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA8, tex.map.image.width, tex.map.image.height, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, tex.map.image);
-                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-                map_info[key] = counter_info++;
-            }
-        }
+		if (materials !== null) {
+			for (var key in materials.materials) {
+				let tex = materials.materials[key];
+				if (tex.map !== null) {
+					this.gl.activeTexture(this.gl.TEXTURE0 + counter_info);
+					vao.tex[counter_info] = this.gl.createTexture();
+					this.gl.bindTexture(this.gl.TEXTURE_2D, vao.tex[counter_info]);
+					this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA8, tex.map.image.width, tex.map.image.height, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, tex.map.image);
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+					map_info[key] = counter_info++;
+				}
+			}
+		}
 
         vao.n_textures = counter_info;
         if (vao.n_textures > 0) {

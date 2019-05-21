@@ -34,7 +34,7 @@ class Viewer {
 		this.suffix = filename.split('.').pop();
 		console.log("filetype:", this.suffix);
 
-		let vox_files = new Set(["vox", "vox2", "df", "voxnoc"]);
+		let vox_files = new Set(["vox", "vox2", "df", "sdf", "voxnoc", "voxsis"]);
 		let scene_files = new Set(["json"]);
 		let image_files = new Set(["jpg", "jpeg", "png", "gif"]);
 
@@ -59,6 +59,7 @@ class Viewer {
 
 		this.renderer = new SceneRenderer();
 		this.renderer.init(this.window0, filename).then(res => {
+			console.log("all loaded");
 			this.advance();
 		});
 	}

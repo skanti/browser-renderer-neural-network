@@ -32,8 +32,8 @@ class WindowManager {
         this.canvas.width = Math.floor(this.window_width);
         this.canvas.height = Math.floor(this.window_height);
 
-        this.z_near = 0.5;
-        this.z_far = 50.0;
+        this.z_near = 0.1;
+        this.z_far = 200.0;
     }
 
 
@@ -74,11 +74,12 @@ class WindowManager {
     init_camera() {
         // -> view/projection
         this.projection_matrix = new THREE.Matrix4();
-        const factor = 0.25;
+        const factor = 0.1;
         this.projection_matrix.makePerspective(-factor*1.0, factor*1.0, factor*this.window_ar, -factor*this.window_ar, this.z_near, this.z_far);
+        //this.projection_matrix.makeOrthographic(-1.0, 1.0, this.window_ar, -this.window_ar, this.z_near, this.z_far);
 
         this.camera = new THREE.PerspectiveCamera();
-        this.camera.position.set(1, 1, -1);
+        this.camera.position.set(2, 2, -1);
         this.camera.up = new THREE.Vector3(0, 1, 0);
         this.camera.lookAt(new THREE.Vector3(0, 0, 0));
         this.camera.updateMatrixWorld(true);

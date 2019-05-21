@@ -29,6 +29,9 @@ class SceneRenderer {
 		this.pvv = new PickVisibleVertex();
 		this.pvv.init(this.window0.gl, this.window0.window_width, this.window0.window_height);
 		this.pvv.set_active();
+		this.M_global = new THREE.Matrix4();
+
+		this.geometric_centers = [];
 
 		return xhr_json("GET", "/download/json/" + filename).then(res => {
 			let trs_global = this.parse_trs(res["trs_global"]["trans"], res["trs_global"]["rot"], res["trs_global"]["scale"]);
@@ -45,18 +48,24 @@ class SceneRenderer {
 			M_global.premultiply(r0);
 			M_global.premultiply(t0);
 
+			let asyncs = [];
 			for (let [i,mesh] of Object.entries(res["meshes"])) {
 				let filename = mesh["filename"];
+
 				let trs = this.parse_trs(mesh["trs"]["trans"], mesh["trs"]["rot"], mesh["trs"]["scale"]);
 
-				this.load_mesh(filename).then(obj => {
+				let a = this.load_mesh(filename).then(obj => {
 
 					obj.scale_matrix.makeScale(trs.scale.x, trs.scale.y, trs.scale.z);
 					obj.rotation_matrix.makeRotationFromQuaternion(trs.rot);
 					obj.translation_matrix.makeTranslation(trs.trans.x, trs.trans.y, trs.trans.z);
 					obj.calc_model_matrix();
 
+
 					this.correct_mesh_trs(obj, M_global);
+					
+					let c = obj.bbox_center.applyMatrix4(obj.model_matrix);
+					this.geometric_centers.push(c);
 
 					let label_buffer = new Int32Array(obj.position_buffer.length/3);
 					label_buffer.fill(i + 1)
@@ -70,11 +79,30 @@ class SceneRenderer {
 					//wireframe.model_matrix = obj.model_matrix;
 					//this.models.push(wireframe);
 				});
+				asyncs.push(a);
 			}
+
+			Promise.all(asyncs).then(reses => {
+				let c = new THREE.Vector3(0,0,0);
+				for (let i in this.geometric_centers) {
+					c.add(this.geometric_centers[i]);
+				}
+
+				c.multiplyScalar(-1.0/this.geometric_centers.length);
+				let C = new THREE.Matrix4();
+				C.makeTranslation(c.x, c.y, c.z);
+				//C.premultiply(M_global);
+				//M_global.multiply(C);
+				this.M_global = C.clone();
+
+				for (let i in this.models) {
+					this.correct_mesh_trs(this.models[i], C);
+				}
+			});
+
 		});
 
     }
-
 	correct_mesh_trs(model, M_global) {
 		let model_matrix = model.model_matrix;
 		model_matrix.premultiply(M_global);
@@ -146,8 +174,19 @@ class SceneRenderer {
 		for (let i in this.models) {
 			this.models[i].draw(this.window0.camera.matrixWorldInverse, this.window0.projection_matrix);
 		}
+
+		let tmp = this.M_global.clone();
+		let t = new THREE.Vector3(); let q = new THREE.Quaternion(); let s = new THREE.Vector3();
+		tmp.decompose(t, q, s);
+		t.multiplyScalar(-1);
+		let cam_pos = this.window0.camera.position.clone().add(t);
+		//let cam_target = this.window0.navigation.target.clone().applyMatrix4(tmp);
+		let cam_target = this.window0.navigation.target.clone().add(t);
+
+
+		console.log("cam-pos:",[cam_pos.x, cam_pos.y, cam_pos.z], "cam-target:",[cam_target.x, cam_target.y, cam_target.z]);
 		
-		let pos_mouse = this.window0.get_pos_mouse();
+		//let pos_mouse = this.window0.get_pos_mouse();
     }
 
 }

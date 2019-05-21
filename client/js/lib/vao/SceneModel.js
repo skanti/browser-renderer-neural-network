@@ -183,6 +183,7 @@ class SceneModel {
                 this.set_buffers_from_mesh0(geometry);
 
                 geometry.computeBoundingBox();
+				this.recenter_mesh(geometry.attributes.position);
 
                 this.model_matrix.identity();
                 this.model_matrix.premultiply(this.scale_matrix);
@@ -224,6 +225,45 @@ class SceneModel {
             });
         });
     }
+    
+	recenter_mesh(vertices) {
+        let min_x = Infinity;
+        let min_y = Infinity;
+        let min_z = Infinity;
+
+        let max_x = -Infinity;
+        let max_y = -Infinity;
+        let max_z = -Infinity;
+
+        let n = vertices.count/3;
+        for (let i = 0; i < n; i++) {
+            min_x = Math.min(min_x, vertices[3*i + 0]);
+            min_y = Math.min(min_y, vertices[3*i + 1]);
+            min_z = Math.min(min_z, vertices[3*i + 2]);
+
+            max_x = Math.max(max_x, vertices[3*i + 0]);
+            max_y = Math.max(max_y, vertices[3*i + 1]);
+            max_z = Math.max(max_z, vertices[3*i + 2]);
+        }
+
+
+        let center_x = (min_x + max_x)/2.0;
+        let center_y = (min_y + max_y)/2.0;
+        let center_z = (min_z + max_z)/2.0;
+
+        max_x = -Infinity;
+        max_y = -Infinity;
+        max_z = -Infinity;
+
+        for (let i = 0; i < n; i++) {
+            max_x = Math.max(max_x, vertices[3*i + 0] - center_x);
+            max_y = Math.max(max_y, vertices[3*i + 1] - center_y);
+            max_z = Math.max(max_z, vertices[3*i + 2] - center_z);
+        }
+
+        this.bbox_center = new THREE.Vector3(center_x, center_y, center_z);
+        this.bounding_box = new THREE.Vector3(max_x, max_y, max_z);
+	}
 
     upload_all_buffers() {
         this.gl.useProgram(this.program);
