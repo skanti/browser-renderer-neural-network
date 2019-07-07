@@ -88,7 +88,7 @@ class VoxRenderer {
 			for (let j = 0; j < dims[1]; j++) {
 				for (let i = 0; i < dims[0]; i++) {
 					let index1 = k*dims[1]*dims[0] + j*dims[0] + i;
-					if (Math.abs(sdf[index1]) <= 2.0*res) {
+					if (Math.abs(sdf[index1]) < 1.0*res) {
 						positions.push(i/dimmax - 0.5*dims[0]/dimmax);
 						positions.push(j/dimmax - 0.5*dims[1]/dimmax);
 						positions.push(k/dimmax - 0.5*dims[2]/dimmax);

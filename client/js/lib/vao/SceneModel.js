@@ -237,13 +237,13 @@ class SceneModel {
 
         let n = vertices.count/3;
         for (let i = 0; i < n; i++) {
-            min_x = Math.min(min_x, vertices[3*i + 0]);
-            min_y = Math.min(min_y, vertices[3*i + 1]);
-            min_z = Math.min(min_z, vertices[3*i + 2]);
+            min_x = Math.min(min_x, vertices.array[3*i + 0]);
+            min_y = Math.min(min_y, vertices.array[3*i + 1]);
+            min_z = Math.min(min_z, vertices.array[3*i + 2]);
 
-            max_x = Math.max(max_x, vertices[3*i + 0]);
-            max_y = Math.max(max_y, vertices[3*i + 1]);
-            max_z = Math.max(max_z, vertices[3*i + 2]);
+            max_x = Math.max(max_x, vertices.array[3*i + 0]);
+            max_y = Math.max(max_y, vertices.array[3*i + 1]);
+            max_z = Math.max(max_z, vertices.array[3*i + 2]);
         }
 
 
