@@ -72,6 +72,20 @@ class Viewer {
 		});
 	}
 	
+	load_and_render_mesh(filename) {
+        this.draw_root(true);
+
+		this.window0 = new WindowManager("id_div_panel", "id_div_canvas");
+		this.window0.init();
+		this.attach_listener(this.window0);
+        this.advance_ref = this.advance.bind(this);
+
+		this.renderer = new MeshRenderer();
+		this.renderer.init(this.window0, filename).then(res => {
+			this.advance();
+		});
+	}
+	
 	load_and_render_wireframe(filename) {
         this.draw_root(true);
 
