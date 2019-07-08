@@ -26,6 +26,7 @@ import Wireframe from "../../lib/vao/Wireframe"
 import SceneRenderer from "./SceneRenderer"
 import VoxRenderer from "./VoxRenderer"
 import MeshRenderer from "./MeshRenderer"
+import WireframeRenderer from "./WireframeRenderer"
 
 
 
@@ -38,10 +39,13 @@ class Viewer {
 		let vox_files = new Set(["vox", "vox2", "df", "sdf", "voxnoc", "voxsis"]);
 		let mesh_files = new Set(["obj", "ply"]);
 		let scene_files = new Set(["json"]);
+		let wireframe_files = new Set(["wrf"]);
 		let image_files = new Set(["jpg", "jpeg", "png", "gif"]);
 
 		if (vox_files.has(this.suffix))
 			this.load_and_render_vox(filename);
+		else if (wireframe_files.has(this.suffix))
+			this.load_and_render_wireframe(filename);
 		else if (mesh_files.has(this.suffix))
 			this.load_and_render_mesh(filename);
 		else if (image_files.has(this.suffix))
@@ -68,7 +72,7 @@ class Viewer {
 		});
 	}
 	
-	load_and_render_mesh(filename) {
+	load_and_render_wireframe(filename) {
         this.draw_root(true);
 
 		this.window0 = new WindowManager("id_div_panel", "id_div_canvas");
@@ -76,7 +80,7 @@ class Viewer {
 		this.attach_listener(this.window0);
         this.advance_ref = this.advance.bind(this);
 
-		this.renderer = new MeshRenderer();
+		this.renderer = new WireframeRenderer();
 		this.renderer.init(this.window0, filename).then(res => {
 			this.advance();
 		});
