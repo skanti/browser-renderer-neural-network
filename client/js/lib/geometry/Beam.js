@@ -20,7 +20,7 @@ export function create_beam(radius, p0, p1, n_sides=6) {
 	let rot_transpose = math.identity(3);
 	let c = math.dot(a, b);
 
-	if (math.norm(v) > 1e-6) {
+	if (math.norm(v) > 0.1) {
 		v = math.multiply(1.0/math.norm(v), v);
 		let s = math.norm(v);
 		let skew = skew_matrix(v.valueOf());
@@ -28,7 +28,8 @@ export function create_beam(radius, p0, p1, n_sides=6) {
 		rot = math.add(rot, math.multiply(1.0/(1.0 + c), math.multiply(skew, skew)));
 	}
 
-	if (c == -1.0) {
+	else if (c < -9e-3) {
+		//rot = math.identity(3);
 		height = -height;
 	}
 	

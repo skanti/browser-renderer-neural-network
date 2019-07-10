@@ -24,6 +24,7 @@ class ThickWireframe {
 		this.vao.init(this.window0.gl);
 
 		return this.load_wrf(filename).then(res => {
+			console.log(res);
 			let mesh_data = this.vao.edges2mesh(res["data"]);
 			let colors = [];
 			for (let i = 0; i < mesh_data.n_verts; i++) {
@@ -32,7 +33,8 @@ class ThickWireframe {
 				colors.push(0.8);
 			}
 			mesh_data["colors"] = new Float32Array(colors);
-			let c = this.calculate_center(mesh_data["verts"]);
+
+			let c = this.calculate_center(res["data"]["verts"]);
 			this.vao.translation_matrix.makeTranslation(-c.x, -c.y, -c.z);
 			this.vao.calc_model_matrix();
 
@@ -53,29 +55,19 @@ class ThickWireframe {
 
         let n = verts.length/3;
         for (let i = 0; i < n; i++) {
-            min_x = Math.min(min_x, verts[3*i + 0]);
-            min_y = Math.min(min_y, verts[3*i + 1]);
-            min_z = Math.min(min_z, verts[3*i + 2]);
+            min_x = Math.min(min_x, verts[i][0]);
+            min_y = Math.min(min_y, verts[i][1]);
+            min_z = Math.min(min_z, verts[i][2]);
 
-            max_x = Math.max(max_x, verts[3*i + 0]);
-            max_y = Math.max(max_y, verts[3*i + 1]);
-            max_z = Math.max(max_z, verts[3*i + 2]);
+            max_x = Math.max(max_x, verts[i][0]);
+            max_y = Math.max(max_y, verts[i][1]);
+            max_z = Math.max(max_z, verts[i][2]);
         }
 
 
         let center_x = (min_x + max_x)/2.0;
         let center_y = (min_y + max_y)/2.0;
         let center_z = (min_z + max_z)/2.0;
-
-        max_x = -Infinity;
-        max_y = -Infinity;
-        max_z = -Infinity;
-
-        for (let i = 0; i < n; i++) {
-            max_x = Math.max(max_x, verts[3*i + 0] - center_x);
-            max_y = Math.max(max_y, verts[3*i + 1] - center_y);
-            max_z = Math.max(max_z, verts[3*i + 2] - center_z);
-        }
 
         return new THREE.Vector3(center_x, center_y, center_z);
 	}
