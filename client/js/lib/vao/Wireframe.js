@@ -5,8 +5,9 @@ import * as Shader from '../shader/PolygonColorGLSL.js';
 
 class VAOMesh {
     constructor() {
-        this.vbo_vertex = 0;
-        this.vbo_color = 0;
+        this.id_vbo_vertex = 0;
+        this.id_vbo_norm = 0;
+        this.id_vbo_color = 0;
         this.ebo = 0;
         this.n_vertices = 0;
         this.n_elements = 0;
@@ -19,7 +20,7 @@ class VAOMesh {
 class Wireframe {
     init(gl) {
         this.gl = gl;
-        this.program = GLProgram.compile_shaders_and_link_with_program(this.gl, Shader.PolygonColorVS, Shader.PolygonColorFS);
+        this.program = GLProgram.compile_shaders_and_link_with_program(this.gl, Shader.VS, Shader.FS);
         this.gl.useProgram(this.program);
 
         this.is_active = 0;
@@ -89,20 +90,31 @@ class Wireframe {
         this.vao.n_elements = this.box.n_elements;
 
         // -> vbo vertex
-        this.vao.vbo_vertex = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.vbo_vertex);
+        this.vao.id_vbo_vertex = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.id_vbo_vertex);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, this.box.vertices, this.gl.STATIC_DRAW);
-        this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(0);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         // <-
         
-		// -> vbo color
-        this.vao.vbo_color = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.vbo_color);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.box.colors, this.gl.STATIC_DRAW);
+		// -> vbo normal
+		let dummy_normals = new Float32Array(this.box.n_vertices*3);
+		dummy_normals.fill(0);
+        this.vao.id_vbo_normal = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.id_vbo_normal);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, dummy_normals, this.gl.STATIC_DRAW); // <-- dummy fill
         this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(1);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+        // <-
+        
+		// -> vbo color
+        this.vao.id_vbo_color = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.id_vbo_color);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.box.colors, this.gl.STATIC_DRAW);
+        this.gl.vertexAttribPointer(2, 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.enableVertexAttribArray(2);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         // <-
 
@@ -118,9 +130,9 @@ class Wireframe {
         this.box = this.make_box(a, b, c);
 
         // -> vbo vertex
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.vbo_vertex);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.id_vbo_vertex);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, this.box.vertices, this.gl.STATIC_DRAW);
-        this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(1);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         // <-
@@ -137,13 +149,18 @@ class Wireframe {
         if (this.is_visible) {
             this.gl.useProgram(this.program);
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.vbo_vertex);
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.id_vbo_vertex);
             this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 0, 0);
             this.gl.enableVertexAttribArray(0);
-
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.vbo_color);
+            
+			this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.id_vbo_normal);
             this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, false, 0, 0);
             this.gl.enableVertexAttribArray(1);
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vao.id_vbo_color);
+            this.gl.vertexAttribPointer(2, 3, this.gl.FLOAT, false, 0, 0);
+            this.gl.enableVertexAttribArray(2);
+            
 
 			this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.program, "model_matrix"), false, new Float32Array(this.model_matrix.elements));
             this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.program, "view_matrix"), false, new Float32Array(view_matrix.elements));

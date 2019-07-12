@@ -6,7 +6,7 @@ class VAOType {
         this.id_program = null;
         this.id_vbo_vertex = null;
         this.id_vbo_normal = null;
-        this.id_vbo_positionss = null;
+        this.id_vbo_positions = null;
         this.id_vbo_colors = null;
 
         this.n_vertices = 0;
@@ -22,6 +22,7 @@ class VoxelGrid {
     init(gl) {
         this.gl = gl;
         this.vao = new VAOType();
+		console.log(PolygonInstanceGLSL);
 
         this.vao.id_program = GLProgram.compile_shaders_and_link_with_program(this.gl, PolygonInstanceGLSL.VS, PolygonInstanceGLSL.FS);
         this.gl.useProgram(this.vao.id_program);
