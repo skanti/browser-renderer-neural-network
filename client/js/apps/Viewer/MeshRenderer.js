@@ -70,30 +70,26 @@ class SceneRenderer {
 		return {"trans" : trans, "rot" : rot, "scale" : scale};
 	}
 
-    load_mesh(filename, trs) {
-        return new Promise((resolve, reject) => {
+	load_mesh(filename, trs) {
+		return new Promise((resolve, reject) => {
+			let obj = null;
 			if (filename.endsWith("obj")) {
-				let obj = new OBJModel();
-				obj.init(this.window0.gl);
-
-				obj.load(filename).then( res => {
-					resolve(obj);
-				});
+				obj = new OBJModel();
 			} else if (filename.endsWith("ply")) {
-				let ply = new SceneModel();
-				ply.init(this.window0.gl);
-
-				ply.load(filename).then( res => {
-					resolve(ply);
-				});
+				obj = new SceneModel();
 
 			}
-        });
+			obj.init(this.window0.gl);
+
+			obj.load(filename).then( res => {
+				resolve(obj);
+			});
+		});
 	}
 
 	load_scene(id_scene) {
-        return new Promise((resolve, reject) => {
-            let scene = new SceneModel();
+		return new Promise((resolve, reject) => {
+			let scene = new SceneModel();
             scene.init(this.window0.gl);
 
             scene.load_scene("scannet", id_scene).then( res => {

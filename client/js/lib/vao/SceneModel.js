@@ -173,8 +173,8 @@ class SceneModel {
     load_from_server(filename) {
         return new Promise((resolve, reject) => {
             var loader = new PLYLoader();
-			filename = "/download/mesh/" + filename;
-            loader.load(filename, geometry => {
+			let filename_new = "/download/mesh/" + filename;
+            loader.load(filename_new, geometry => {
                 geometry.computeVertexNormals();
 
                 this.vao.n_vertices = geometry.attributes.position.count;
@@ -297,8 +297,14 @@ class SceneModel {
 
     set_buffers_from_mesh0(geometry) {
         this.position_buffer = geometry.attributes.position.array;
-        this.normal_buffer = geometry.attributes.normal.array;
-        this.color_buffer = geometry.attributes.color.array;
+		if (geometry.attributes.normal)
+			this.normal_buffer = geometry.attributes.normal.array;
+		else
+			this.normal_buffer = new Float32Array(this.position_buffer.length);
+		if (geometry.attributes.color)
+			this.color_buffer = geometry.attributes.color.array;
+		else
+			this.color_buffer = new Float32Array(this.position_buffer.length);
         this.index_buffer = geometry.index.array;
     }
 
