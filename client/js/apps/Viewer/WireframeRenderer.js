@@ -26,13 +26,13 @@ class ThickWireframe {
 		return this.load_wrf(filename).then(res => {
 			console.log(res);
 			let mesh_data = this.vao.edges2mesh(res["data"]);
-			let colors = [];
-			for (let i = 0; i < mesh_data.n_verts; i++) {
-				colors.push(0.8);
-				colors.push(0.8);
-				colors.push(0.8);
-			}
-			mesh_data["colors"] = new Float32Array(colors);
+			//let colors = [];
+			//for (let i = 0; i < mesh_data.n_verts; i++) {
+			//	colors.push(Math.random());
+			//	colors.push(Math.random());
+			//	colors.push(Math.random());
+			//}
+			//mesh_data["colors"] = new Float32Array(colors);
 
 			let c = this.calculate_center(res["data"]["verts"]);
 			this.vao.translation_matrix.makeTranslation(-c.x, -c.y, -c.z);

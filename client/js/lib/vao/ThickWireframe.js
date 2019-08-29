@@ -40,6 +40,7 @@ class ThickWireframe {
 		let n_edges = data["n_edges"];
 		let verts = [];
 		let normals = [];
+		let colors = [];
 		let faces = [];
 		let n_verts = 0;
 		let n_faces = 0;
@@ -50,6 +51,10 @@ class ThickWireframe {
 			let beam = Beam.create_beam(0.05, p0, p1);
 			verts = verts.concat(beam.vertices);
 			normals = normals.concat(beam.normals);
+			let c = [Math.random(), Math.random(), Math.random()];
+			for (let j = 0; j < beam.vertices.length; j++) {
+				colors.push(c);
+			}
 			beam.faces = math.add(n_verts, math.matrix(beam.faces)).valueOf();
 			faces = faces.concat(beam.faces);
 			n_verts += beam.vertices.length;
@@ -63,11 +68,14 @@ class ThickWireframe {
 		normals = new Float32Array(normals.reduce(function(prev, curr) {
 			return prev.concat(curr);
 		}, []));
+		colors = new Float32Array(colors.reduce(function(prev, curr) {
+			return prev.concat(curr);
+		}, []));
 		faces = new Uint32Array(faces.reduce(function(prev, curr) {
 			return prev.concat(curr);
 		}, []));
 
-		return {"n_verts" : n_verts, "n_faces" : n_faces, "verts" : verts, "faces" : faces, "normals" : normals};
+		return {"n_verts" : n_verts, "n_faces" : n_faces, "verts" : verts, "faces" : faces, "normals" : normals, "colors" : colors};
 	}
 
     upload_data(mesh_data) {
