@@ -119,8 +119,7 @@ class SceneModel {
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-        this.gl.enable(this.gl.CULL_FACE);
-        this.gl.cullFace(this.gl.BACK);
+        this.gl.disable(this.gl.CULL_FACE);
         // <-
 
         this.vao = new VAOMesh();
@@ -137,8 +136,7 @@ class SceneModel {
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-        this.gl.enable(this.gl.CULL_FACE);
-        this.gl.cullFace(this.gl.BACK);
+        this.gl.disable(this.gl.CULL_FACE);
 
         this.upload_all_buffers();
     }
