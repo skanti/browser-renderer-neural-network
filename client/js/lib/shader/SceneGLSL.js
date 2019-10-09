@@ -34,11 +34,9 @@ export const SceneFS = `#version 300 es
             const vec3 ls = vec3(0.1);
 
             void main() {
-                vec3 normal1 = vec3(0);
-                if (gl_FrontFacing)
-                    normal1 = normalize(normal_vs);
-                else
-                    normal1 = normalize(-normal_vs);
+				vec3 X = dFdx(position_vs);
+				vec3 Y = dFdy(position_vs);
+				vec3 normal1 = normalize(cross(X,Y));
                 vec3 s = normalize(pos_light - position_vs);
                 vec3 v = normalize(-position_vs);
                 vec3 r = reflect(-s, normal1);
