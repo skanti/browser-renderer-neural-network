@@ -23,7 +23,18 @@ Open firefox or chrome and goto:
 
 ```localhost:8080/Viewer/home/amo/neural-network/prediction.voxnoc```
 
-<img src="pics/example.png" alt="NOCs" width="800" >
+| ```.voxnoc```   (voxelwise rgb color)         |  
+:-------------------------:|
+![](pics/nocs.png)
+| ```.json``` (scene fileformat) |
+![](pics/json.png)
+| ```.ply``` (this is a black bunny lol)   |  
+![](pics/ply.png)
+| ```.wrf``` (wireframe format)   |  
+![](pics/wrf.png)
+| ```.vox2``` (this is a heatmap)   |  
+![](pics/vox2.png)
+
 
 ### Get started
 
