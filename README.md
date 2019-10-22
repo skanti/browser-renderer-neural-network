@@ -13,7 +13,7 @@ This is a WebGL based renderer for following file formats:
 
 ## How-To Use
 
-Just paste link to the file and the browser will render that file automatically:
+Just pase the absolute path of your file in the browser and it will render that file automatically:
 
 ```localhost:8080/Viewer/[abspath-to-file]```
 
