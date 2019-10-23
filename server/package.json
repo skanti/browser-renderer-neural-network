@@ -22,6 +22,6 @@
   "license": "ISC",
   "devDependencies": {
     "browserify-css": "^0.12.0",
-    "mongoose": "^5.0.0"
+    "mongoose": "^5.7.5"
   }
 }
