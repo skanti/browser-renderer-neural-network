@@ -10,6 +10,7 @@ This is a WebGL based renderer for following file formats:
 - ```.json``` (scene files, can be used in mitsuba)
 - ```jpg, png, gif``` (images)
 
+If you want more file formats to be visualized, then open an issue and I'll write a shader for it as soon as I find some time
 
 ## How-To Use
 
@@ -17,13 +18,34 @@ Just pase the absolute path of your file in the browser and it will render that 
 
 ```localhost:8080/Viewer/[abspath-to-file]```
 
+## Why?
+
++ No copying from server to local machine needed
++ No meshlab needed
++ No remote desktop needed
++ View outputs from anywhere
++ All you need is a browser
++ It's super fast to view predictions in the browser
+
+I have seen people copy outputs to their local machine and visualize with meshlab lol. I believe this will save a lot of time.
 
 ### Example:
 Open firefox or chrome and goto:
 
 ```localhost:8080/Viewer/home/amo/neural-network/prediction.voxnoc```
 
-<img src="pics/example.png" alt="NOCs" width="800" >
+| ```.voxnoc```   (voxelwise rgb color)         |  
+:-------------------------:|
+![](pics/nocs.png)
+| ```.json``` (scene fileformat) |
+![](pics/json.png)
+| ```.ply``` (this is a black bunny lol)   |  
+![](pics/ply.png)
+| ```.wrf``` (wireframe format)   |  
+![](pics/wrf.png)
+| ```.vox2``` (this is a heatmap)   |  
+![](pics/vox2.png)
+
 
 ### Get started
 
@@ -36,5 +58,6 @@ Open firefox or chrome and goto:
 6. Run `./build.sh` to compile
     * Run `./watch.sh` to develop with `javascript` (compiles with every change).
 7. Run `./server/run.sh` to start the server.
+   * Note that this assumes that you use `bash`
 8. Go to *localhost:8080/Viewer/[abspath-to-file]* 
 
