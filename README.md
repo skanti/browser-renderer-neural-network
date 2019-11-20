@@ -56,7 +56,6 @@ Open firefox or chrome and goto:
     * This will install all dependencies specified in `package.json`
 5. `cd ./server/ && npm install` for server side.
 6. Run `./build.sh` to compile
-    * Run `./watch.sh` to develop with `javascript` (compiles with every change).
 7. Run `./server/run.sh` to start the server.
    * Note that this assumes that you use `bash`
 8. Go to *localhost:8080/Viewer/[abspath-to-file]* 

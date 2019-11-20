@@ -6,8 +6,6 @@ log.txt
 # hidden files
 .*
 *~
-# other
-env.sh
 
 #build folders
 build
