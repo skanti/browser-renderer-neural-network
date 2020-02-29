@@ -16,6 +16,7 @@ class SVoxData {
         this.grid2world = null;
         this.coords = null;
         this.pdf = null;
+		this.rgb = null;
 
     }
 }
@@ -54,6 +55,8 @@ class VoxRenderer {
 
 			if (this.suffix == "svox2")
 				colormode = "pdf";
+			if (this.suffix == "svoxrgb")
+				colormode = "direct";
 
 			this.vao_data0 = this.create_vao_data(this.vox0, colormode)
 			this.vao0.upload_data(this.vao_data0.n_vertices, this.vao_data0.n_instances, this.vao_data0.vertices, this.vao_data0.normals, this.vao_data0.positions, this.vao_data0.colors);
@@ -95,6 +98,10 @@ class VoxRenderer {
 					colors.push(color1[0]);
 					colors.push(color1[1]);
 					colors.push(color1[2]);
+				} else if (colormode == "direct") {
+					colors.push(vox.rgb[3*i + 0]);
+					colors.push(vox.rgb[3*i + 1]);
+					colors.push(vox.rgb[3*i + 2]);
 				} else if (colormode == "none") {
 					colors.push(0.2);
 					colors.push(0.2);
@@ -158,7 +165,7 @@ class VoxRenderer {
 
 	unpack_binary(filename, buffer0) {
 		let suffix = filename.split('.').pop();
-		let vox_files = new Set(["svox", "svox2"]);
+		let vox_files = new Set(["svox", "svox2", "svoxrgb"]);
 
 		if (vox_files.has(this.suffix) === false) {
 			console.log("Filetype not known.");
@@ -188,13 +195,17 @@ class VoxRenderer {
 		
 		offset += 16*4;
 
-        vox.coords = new Int32Array(buffer0, offset, 3*n_elems);
-		offset += 3*n_elems*4;
+        vox.coords = new Int32Array(buffer0, offset, n_elems*3);
+		offset += n_elems*3*4;
 
 		if (buffer0.byteLength > offset) { // <-- svox2 
 			vox.pdf = new Float32Array(buffer0, offset, n_elems);
 			offset += n_elems*4;
 		} 
+		if (buffer0.byteLength > offset) { // <-- svoxrgb 
+			vox.rgb = new Float32Array(buffer0, offset, n_elems*3);
+			offset += n_elems*3*4;
+		}
 
         return vox;
     }

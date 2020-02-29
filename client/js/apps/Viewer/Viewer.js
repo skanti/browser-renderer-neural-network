@@ -38,7 +38,7 @@ class Viewer {
 		console.log("filetype:", this.suffix);
 
 		let vox_files = new Set(["vox", "vox2", "df", "sdf", "voxnoc", "voxsis"]);
-		let svox_files = new Set(["svox", "svox2"]);
+		let svox_files = new Set(["svox", "svox2", "svoxrgb"]);
 		let mesh_files = new Set(["obj", "ply"]);
 		let scene_files = new Set(["json"]);
 		let wireframe_files = new Set(["wrf"]);
