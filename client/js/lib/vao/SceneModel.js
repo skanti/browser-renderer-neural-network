@@ -29,7 +29,7 @@ class VAOOffscreen {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         // <-
     }
-
+    
     upload_vbo_label(label_buffer) {
         // -> vbo labels
         this.vbo_label = this.gl.createBuffer();

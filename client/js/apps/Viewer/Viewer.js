@@ -25,6 +25,7 @@ import OBJModel from "../../lib/vao/OBJModel"
 import Wireframe from "../../lib/vao/Wireframe"
 import SceneRenderer from "./SceneRenderer"
 import VoxRenderer from "./VoxRenderer"
+import SVoxRenderer from "./SVoxRenderer"
 import MeshRenderer from "./MeshRenderer"
 import WireframeRenderer from "./WireframeRenderer"
 
@@ -37,6 +38,7 @@ class Viewer {
 		console.log("filetype:", this.suffix);
 
 		let vox_files = new Set(["vox", "vox2", "df", "sdf", "voxnoc", "voxsis"]);
+		let svox_files = new Set(["svox", "svox2", "svoxrgb"]);
 		let mesh_files = new Set(["obj", "ply"]);
 		let scene_files = new Set(["json"]);
 		let wireframe_files = new Set(["wrf"]);
@@ -44,6 +46,8 @@ class Viewer {
 
 		if (vox_files.has(this.suffix))
 			this.load_and_render_vox(filename);
+		else if (svox_files.has(this.suffix))
+			this.load_and_render_svox(filename);
 		else if (wireframe_files.has(this.suffix))
 			this.load_and_render_wireframe(filename);
 		else if (mesh_files.has(this.suffix))
@@ -95,6 +99,20 @@ class Viewer {
         this.advance_ref = this.advance.bind(this);
 
 		this.renderer = new WireframeRenderer();
+		this.renderer.init(this.window0, filename).then(res => {
+			this.advance();
+		});
+	}
+	
+	load_and_render_svox(filename) {
+        this.draw_root(true);
+
+		this.window0 = new WindowManager("id_div_panel", "id_div_canvas");
+		this.window0.init();
+		this.attach_listener(this.window0);
+        this.advance_ref = this.advance.bind(this);
+
+		this.renderer = new SVoxRenderer();
 		this.renderer.init(this.window0, filename).then(res => {
 			this.advance();
 		});

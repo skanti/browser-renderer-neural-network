@@ -53,6 +53,9 @@ class SceneRenderer {
 				let filename = mesh["filename"];
 
 				let trs = this.parse_trs(mesh["trs"]["trans"], mesh["trs"]["rot"], mesh["trs"]["scale"]);
+				let color = null;
+				if ("color" in  mesh)
+					color = mesh["color"];
 
 				let a = this.load_mesh(filename).then(obj => {
 
@@ -61,6 +64,15 @@ class SceneRenderer {
 					obj.translation_matrix.makeTranslation(trs.trans.x, trs.trans.y, trs.trans.z);
 					obj.calc_model_matrix();
 
+					if (color) {
+						let factor = (color[0] % 1 === 0) ? 1.0/255.0 : 1.0; 
+						for (let j = 0; j < obj.color_buffer.length/3; j++) {
+							obj.color_buffer[j*3 + 0] = color[0]*factor;
+							obj.color_buffer[j*3 + 1] = color[1]*factor;
+							obj.color_buffer[j*3 + 2] = color[2]*factor;
+						}
+						obj.upload_all_buffers();
+					}
 
 					this.correct_mesh_trs(obj, M_global);
 					
