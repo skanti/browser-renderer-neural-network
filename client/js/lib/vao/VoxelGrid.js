@@ -22,7 +22,6 @@ class VoxelGrid {
     init(gl) {
         this.gl = gl;
         this.vao = new VAOType();
-		console.log(PolygonInstanceGLSL);
 
         this.vao.id_program = GLProgram.compile_shaders_and_link_with_program(this.gl, PolygonInstanceGLSL.VS, PolygonInstanceGLSL.FS);
         this.gl.useProgram(this.vao.id_program);

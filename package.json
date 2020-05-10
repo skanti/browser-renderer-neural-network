@@ -8,18 +8,18 @@
     "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
     "babelify": "^7.3.0",
-    "browserify": "^16.3.0",
+    "browserify": "^16.5.1",
     "browserify-css": "^0.15.0",
     "react-bootstrap": "^0.31.3",
     "watchify": "^3.11.1"
   },
   "dependencies": {
-    "csv-parse": "^4.4.6",
-    "d3": "^4.10.0",
-    "mathjs": "^6.0.3",
-    "plotly.js": "^1.48.3",
-    "react": "^15.6.1",
-    "react-dom": "^15.6.1",
+    "csv-parse": "^4.9.0",
+    "d3": "^4.13.0",
+    "mathjs": "^6.6.5",
+    "plotly.js": "^1.54.1",
+    "react": "^15.6.2",
+    "react-dom": "^15.6.2",
     "three": "^0.86.0"
   },
   "scripts": {

@@ -196,7 +196,7 @@ class SceneRenderer {
 		let cam_target = this.window0.navigation.target.clone().add(t);
 
 
-		console.log("cam-pos:",[cam_pos.x, cam_pos.y, cam_pos.z], "cam-target:",[cam_target.x, cam_target.y, cam_target.z]);
+		//console.log("cam-pos:",[cam_pos.x, cam_pos.y, cam_pos.z], "cam-target:",[cam_target.x, cam_target.y, cam_target.z]);
 		
 		//let pos_mouse = this.window0.get_pos_mouse();
     }

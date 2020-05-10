@@ -34,6 +34,9 @@ class WindowManager {
 
         this.z_near = 0.1;
         this.z_far = 200.0;
+		
+		this.is_firefox = window.navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+		console.log("is_firefox", this.is_firefox);
     }
 
 
@@ -192,19 +195,28 @@ class WindowManager {
     }
 
 
-    add_listener(event_tag, event_callback) {
-        if (event_tag === "mousemove")
-            this.container.parentNode.addEventListener( event_tag, event_callback, false );
-        else
-            this.container.addEventListener( event_tag, event_callback, false );
-    }
+	add_listener(event_tag, event_callback) {
+		if (event_tag === "mousemove") {
+			this.container.parentNode.addEventListener( event_tag, event_callback, false );
+		} else if  (event_tag == "mousewheel") {
+			this.container.addEventListener( "wheel", event_callback, false );
+		} else {
+			this.container.addEventListener( event_tag, event_callback, false );
+		}
+	}
 
-    remove_listener(event_tag, event_callback) {
-        if (event_tag === "mousemove")
-            this.container.parentNode.removeEventListener( event_tag, event_callback, false );
-        else
-            this.container.removeEventListener( event_tag, event_callback, false );
-    }
+	remove_listener(event_tag, event_callback) {
+		if (event_tag === "mousemove") {
+			this.container.parentNode.removeEventListener( event_tag, event_callback, false );
+		} else if (event_tag === "mousewheel") {
+			if (this.is_firefox)
+				this.container.removeEventListener( "DOMMouseScroll", event_callback, false );
+			else
+				this.container.removeEventListener( "mousewheel", event_callback, false );
+		} else {
+			this.container.removeEventListener( event_tag, event_callback, false );
+		}
+	}
 
     clear(){
         this.gl.clearColor(230/255.0, 240/255.0, 230/255.0, 1.0);  // Clear to black, fully opaque

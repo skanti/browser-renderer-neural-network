@@ -50,6 +50,7 @@ class VoxRenderer {
 		return this.load_svox(filename).then(res => {
 			this.vox0 = res["svox"];
 
+
 			this.suffix = filename.split('.').pop();
 			let colormode = "none";
 
@@ -57,6 +58,7 @@ class VoxRenderer {
 				colormode = "pdf";
 			if (this.suffix == "svoxrgb")
 				colormode = "direct";
+
 
 			this.vao_data0 = this.create_vao_data(this.vox0, colormode)
 			this.vao0.upload_data(this.vao_data0.n_vertices, this.vao_data0.n_instances, this.vao_data0.vertices, this.vao_data0.normals, this.vao_data0.positions, this.vao_data0.colors);
@@ -86,6 +88,7 @@ class VoxRenderer {
         let positions = []
 		let colors = []
 		let n_elems = vox.n_elems;
+		console.log(n_elems);
 		for (let i = 0; i < n_elems; i++) {
 			let px = 1.0*coords[3*i + 0];
 			let py = 1.0*coords[3*i + 1];
@@ -174,6 +177,7 @@ class VoxRenderer {
 
 		let is_col_major = true;
 
+
         let vox = new SVoxData();
 
 		let offset = 0*4;
@@ -182,9 +186,11 @@ class VoxRenderer {
 		vox.n_elems = n_elems;
 		offset += 1*4;
 
+
         let res = new Float32Array(buffer0, offset, 1)[0];
         vox.res = res;
 		offset += 1*4;
+		
 
         let bbox = new Int32Array(buffer0, offset, 6);
         vox.bbox = bbox;
@@ -192,6 +198,8 @@ class VoxRenderer {
 
         let grid2world = new Float32Array(buffer0, offset, 16);
         vox.grid2world = grid2world;
+		
+		console.log(grid2world);
 		
 		offset += 16*4;
 
