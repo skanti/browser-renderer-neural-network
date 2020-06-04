@@ -16,6 +16,7 @@
   "dependencies": {
     "csv-parse": "^4.9.0",
     "d3": "^4.13.0",
+    "google-protobuf": "^3.12.2",
     "mathjs": "^6.6.5",
     "plotly.js": "^1.54.1",
     "react": "^15.6.2",

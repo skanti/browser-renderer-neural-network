@@ -7,6 +7,7 @@ import WindowManager from "../Common/WindowManager"
 import VoxelGridVAO from "../../lib/vao/VoxelGrid"
 import * as Cube from "../../lib/geometry/Cube"
 import Wireframe from "../../lib/vao/Wireframe"
+import {Data3} from "../../lib/proto/data3_pb.js"
 
 class SVoxData {
     constructor() {
@@ -15,7 +16,7 @@ class SVoxData {
 		this.bbox = null;
         this.grid2world = null;
         this.coords = null;
-        this.pdf = null;
+        this.mask = null;
 		this.rgb = null;
 
     }
@@ -54,9 +55,10 @@ class VoxRenderer {
 			this.suffix = filename.split('.').pop();
 			let colormode = "none";
 
-			if (this.suffix == "svox2")
-				colormode = "pdf";
-			if (this.suffix == "svoxrgb")
+			console.log(this.vox0);
+			if (this.vox0.mask)
+				colormode = "mask";
+			if (this.vox0.rgb)
 				colormode = "direct";
 
 
@@ -72,12 +74,12 @@ class VoxRenderer {
 			this.wireframe.is_visible = 1;
         });
     }
-	create_vao_data(vox, colormode="none", should_rotate=false, only_surface=false) {
+	create_vao_data(svox, colormode="none", should_rotate=false, only_surface=false) {
         let vao_data = new VAOData();
 
-        let res = vox.res;
-        let coords = vox.coords;
-        let pdf = vox.pdf;
+        let res = svox.res;
+        let coords = svox.coords;
+        let mask = svox.mask;
 
 
 		let bbox = this.vox0.bbox;
@@ -87,8 +89,8 @@ class VoxRenderer {
 
         let positions = []
 		let colors = []
-		let n_elems = vox.n_elems;
-		console.log(n_elems);
+		let n_elems = svox.n_elems;
+		console.log("n-elems:", n_elems);
 		for (let i = 0; i < n_elems; i++) {
 			let px = 1.0*coords[3*i + 0];
 			let py = 1.0*coords[3*i + 1];
@@ -96,15 +98,15 @@ class VoxRenderer {
 				positions.push(px/dimmax - 0.5*extent[0]/dimmax);
 				positions.push(py/dimmax - 0.5*extent[1]/dimmax);
 				positions.push(pz/dimmax - 0.5*extent[2]/dimmax);
-				if (colormode == "pdf") {
-					let color1 = this.convert_value_to_rgb(pdf[i])
+				if (colormode == "mask") {
+					let color1 = this.convert_value_to_rgb(mask[i])
 					colors.push(color1[0]);
 					colors.push(color1[1]);
 					colors.push(color1[2]);
 				} else if (colormode == "direct") {
-					colors.push(vox.rgb[3*i + 0]);
-					colors.push(vox.rgb[3*i + 1]);
-					colors.push(vox.rgb[3*i + 2]);
+					colors.push(svox.rgb[3*i + 0]);
+					colors.push(svox.rgb[3*i + 1]);
+					colors.push(svox.rgb[3*i + 2]);
 				} else if (colormode == "none") {
 					colors.push(0.2);
 					colors.push(0.2);
@@ -178,59 +180,85 @@ class VoxRenderer {
 		let is_col_major = true;
 
 
-        let vox = new SVoxData();
+        let svox = new SVoxData();
 
 		let offset = 0*4;
 
         let n_elems = new Int32Array(buffer0, offset, 1)[0];
-		vox.n_elems = n_elems;
+		svox.n_elems = n_elems;
 		offset += 1*4;
 
 
         let res = new Float32Array(buffer0, offset, 1)[0];
-        vox.res = res;
+        svox.res = res;
 		offset += 1*4;
 		
 
         let bbox = new Int32Array(buffer0, offset, 6);
-        vox.bbox = bbox;
+        svox.bbox = bbox;
 		offset += 6*4;
 
         let grid2world = new Float32Array(buffer0, offset, 16);
-        vox.grid2world = grid2world;
+        svox.grid2world = grid2world;
 		
 		console.log(grid2world);
 		
 		offset += 16*4;
 
-        vox.coords = new Int32Array(buffer0, offset, n_elems*3);
+        svox.coords = new Int32Array(buffer0, offset, n_elems*3);
 		offset += n_elems*3*4;
 
 		if (buffer0.byteLength > offset) { // <-- svox2 
-			vox.pdf = new Float32Array(buffer0, offset, n_elems);
+			svox.mask = new Float32Array(buffer0, offset, n_elems);
 			offset += n_elems*4;
 		} 
 		if (buffer0.byteLength > offset) { // <-- svoxrgb 
-			vox.rgb = new Float32Array(buffer0, offset, n_elems*3);
+			svox.rgb = new Float32Array(buffer0, offset, n_elems*3);
 			offset += n_elems*3*4;
 		}
 
-        return vox;
+        return svox;
     }
     
-    
+	unpack_proto(filename, res) {
+		let message = Data3.deserializeBinary(res).getSvox();
+        
+		let svox = new SVoxData();
+
+
+        svox.n_elems = message.getNElems();
+        svox.res = message.getRes();
+
+        svox.bbox = message.getBboxList();
+        svox.grid2world = message.getGrid2worldList();
+
+
+        svox.coords = new Int32Array(message.getCoordsList());
+
+		svox.mask = new Float32Array(message.getMaskList());
+
+		svox.rgb = new Float32Array(message.getRgbList());
+
+		return svox;
+
+	}
+
 	load_svox(filename) {
-		this.suffix = filename.split('.').pop();
+		return xhr_arraybuffer("GET", "/download/vox/" + filename).then(res => {
+			let suffix = filename.split('.').pop();
+			let svox = null;
+			if (suffix === "pb") 
+				svox = this.unpack_proto(filename, res);
+			else
+				svox = this.unpack_binary(filename, res);
+			return {"filename" : filename, "svox" : svox};
+		}).catch(err => {
+			console.log(err);
+			return {"filename" : filename, "svox" : null};
+		});
+	}
 
-      return xhr_arraybuffer("GET", "/download/vox/" + filename).then(res => {
-		  let vox = this.unpack_binary(filename, res);
-          return {"filename" : filename, "svox" : vox};
-      }).catch(err => {
-		  return {"filename" : filename, "svox" : null};
-	  });
-    }
 
-	
     draw() {
         this.window0.clear();
         this.window0.advance(0, 16);

@@ -29,14 +29,18 @@ import SVoxRenderer from "./SVoxRenderer"
 import MeshRenderer from "./MeshRenderer"
 import WireframeRenderer from "./WireframeRenderer"
 
+import {Data3} from "../../lib/proto/data3_pb.js"
+
 
 
 class Viewer {
 
     init(filename) {
 		this.suffix = filename.split('.').pop();
-		console.log("filetype:", this.suffix);
+		console.log("suffix", this.suffix);
+		this.dtype = "";
 
+		let pb = new Set(["pb"]); // <-- protobuf
 		let vox_files = new Set(["vox", "vox2", "df", "sdf", "voxnoc", "voxsis"]);
 		let svox_files = new Set(["svox", "svox2", "svoxrgb"]);
 		let mesh_files = new Set(["obj", "ply"]);
@@ -44,21 +48,52 @@ class Viewer {
 		let wireframe_files = new Set(["wrf"]);
 		let image_files = new Set(["jpg", "jpeg", "png", "gif"]);
 
-		if (vox_files.has(this.suffix))
-			this.load_and_render_vox(filename);
-		else if (svox_files.has(this.suffix))
-			this.load_and_render_svox(filename);
-		else if (wireframe_files.has(this.suffix))
-			this.load_and_render_wireframe(filename);
-		else if (mesh_files.has(this.suffix))
-			this.load_and_render_mesh(filename);
-		else if (image_files.has(this.suffix))
-			this.load_and_draw_image(filename);
-		else if (scene_files.has(this.suffix))
-			this.load_and_render_scene(filename);
-		else
-			console.log("filetype not accepted");
-    }
+		// -> check if packed up (.pb, .zip, .hd5, etc)
+		let check_container = new Promise((resolve, reject) => {
+			if (pb.has(this.suffix)) {
+				let dtype = this.peek_type_from_protobuf(filename);
+				resolve(dtype);
+			} else {
+				resolve(this.suffix);
+			}
+		});
+		// <-
+
+
+		Promise.all([check_container]).then(reses => {	
+			this.dtype = reses[0];
+			console.log("all", this.dtype);
+			if (vox_files.has(this.dtype))
+				this.load_and_render_vox(filename);
+			else if (svox_files.has(this.dtype))
+				this.load_and_render_svox(filename);
+			else if (wireframe_files.has(this.dtype))
+				this.load_and_render_wireframe(filename);
+			else if (mesh_files.has(this.dtype))
+				this.load_and_render_mesh(filename);
+			else if (image_files.has(this.dtype))
+				this.load_and_draw_image(filename);
+			else if (scene_files.has(this.dtype))
+				this.load_and_render_scene(filename);
+			else
+				console.log("filetype not accepted");
+		})
+	}
+
+	peek_type_from_protobuf(filename) {
+		return new Promise((resolve, reject) => {
+			xhr_arraybuffer("GET", "/download/vox/" + filename).then(res => {
+				let message = Data3.deserializeBinary(res);
+
+				if (message.hasSvox()) {
+					resolve("svox");
+				} else if (message.hasVox()) {
+					resolve("vox");
+				}
+			});
+		});
+	}
+
 
 	load_and_render_scene(filename) {
 
