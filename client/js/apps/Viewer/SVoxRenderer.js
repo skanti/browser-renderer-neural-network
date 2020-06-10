@@ -172,7 +172,7 @@ class VoxRenderer {
 		let suffix = filename.split('.').pop();
 		let vox_files = new Set(["svox", "svox2", "svoxrgb"]);
 
-		if (vox_files.has(this.suffix) === false) {
+		if (vox_files.has(suffix) === false) {
 			console.log("Filetype not known.");
 			return 0;
 		}

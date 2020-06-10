@@ -37,9 +37,9 @@ export const FS = `#version 300 es
     in vec3 normal_vs;
     in vec3 color_vs;
 
-    const vec3 la = vec3(0.3);
+    const vec3 la = vec3(0.0);
     const vec3 ld = vec3(1.0);
-    const vec3 ls = vec3(0.3);
+    const vec3 ls = vec3(0.1);
 
 
     const vec3 ka = vec3(1.0, 1.0, 1.0);
